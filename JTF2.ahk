@@ -94,7 +94,7 @@ Return
 CreateGuiControls()
 {
     Gui Add, CheckBox, x8 y4 w60 h20, Activate
-    Gui Add, Hotkey, x72 y4 w84 h20, vHKToggleActivation
+    Gui Add, Hotkey, x72 y4 w84 h20 vHKToggleActivation
     Gui Add, Text, x402 y7 w60 h20 vTxtGameProcDetect, {ProcDetect}
     Gui Add, Button, x470 y4 w48 h20 gEventBtnRun, Run
     Gui Add, Button, x518 y4 w18 h20 vBtnHelp gEventBtnHelp, ?
