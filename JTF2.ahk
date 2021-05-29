@@ -41,8 +41,10 @@ AppMain()
     Menu, Tray, Icon, %AppIconPath%, 1, 1
 
     CreateGuiControls()
-    SetupDefaultHotkeys()
+    SetupHotkeyControls()
+    SetEditMode(False)
     SetAutoClickInterval(%IntervalMinimum%)
+
     DetectGameProcess()
 }
 
@@ -65,12 +67,14 @@ Global TxtGameProcDetect
 Global TxtClickPerSec
 Global TxtRPM
 Global BtnHelp
+Global BtnEdit
 Global EBInterval
 Global SBStatus
 
 ; Global variables
 Global bGameProcessDetected := False
 Global bGameProcessFocused := False
+Global bEditing := False
 Global AutoClickInterval := IntervalMinimum
 
 ; Gui events
@@ -80,6 +84,10 @@ Return
 
 EventBtnHelp:
 Run %RepositoryLink%
+Return
+
+EventBtnEdit:
+ToggleEditMode()
 Return
 
 EventBtnClose:
@@ -126,7 +134,7 @@ CreateGuiControls()
     Gui Add, Hotkey, x440 y132 w24 w84 vHKRunSummitElevatorMacro
 
     Gui Add, CheckBox, x338 y192 w120 h20, Close on game exit
-    Gui Add, Button, x336 y212 w64 h32, {Edit}
+    Gui Add, Button, x336 y212 w64 h32 vBtnEdit gEventBtnEdit, {Edit}
     Gui Add, Button, x400 y212 w52 h32, Set to Default
     Gui Add, Button, x472 y212 w64 h32 gEventBtnClose, Close
 
@@ -143,6 +151,37 @@ CreateGuiControls()
 
 UpdateGuiControls()
 {
+}
+
+;===============================================================
+
+ToggleEditMode()
+{
+    SetEditMode(!bEditing)
+}
+
+SetEditMode(bEdit)
+{
+    If bEditing != bEdit
+    {
+        bEditing := bEdit
+        If bEdit
+        {
+            ; OnEdit
+            GuiControl,, BtnEdit, Done
+        }
+        Else
+        {
+            ; OnApply
+            GuiControl,, BtnEdit, Edit
+        }
+        UpdateGuiControls()
+    }
+}
+
+IsEditing()
+{
+    Return bEditing
 }
 
 ;===============================================================
@@ -220,7 +259,12 @@ IsGameProcessFocused()
 
 ;===============================================================
 
-SetupDefaultHotkeys()
+SetupHotkeyControls()
+{
+    SetupDefaultHotkeyControls()
+}
+
+SetupDefaultHotkeyControls()
 {
     GuiControl,, HKToggleActivation, ``
     GuiControl,, HKToggleAC, XButton1
@@ -235,24 +279,24 @@ SetupDefaultHotkeys()
 
 SetAutoClickInterval(Interval)
 {
-    If (Interval < IntervalMinimum)
+    If Interval < IntervalMinimum
     {
         Interval := IntervalMinimum
     }
-    If (Interval > IntervalMaximum)
+    If Interval > IntervalMaximum
     {
         Interval := IntervalMaximum
     }
 
-    If (AutoClickInterval != Interval)
+    If AutoClickInterval != Interval
     {
         AutoClickInterval := Interval
 
         ; OnAutoClickIntervalChanged()
-        ClickPerSec := 1000.0 / AutoClickInterval
-        ClickPerSecStr := Format("{1:0.2f}", ClickPerSec)
-        RPM := ClickPerSec * 60
+        RPM := 60.0 * 1000.0 / AutoClickInterval
         RPMStr := Format("{1:0.2f}", RPM)
+        ClickPerSec := RPM / 60.0
+        ClickPerSecStr := Format("{1:0.2f}", ClickPerSec)
         GuiControl,, EBInterval, %AutoClickInterval%
         GuiControl,, TxtClickPerSec, %ClickPerSecStr%
         GuiControl,, TxtRPM, %RPMStr%
