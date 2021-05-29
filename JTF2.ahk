@@ -5,7 +5,7 @@
 #NoEnv
 
 ; App information
-Global AppName := "Joint-Trouble-Free for TD2"
+Global AppName := "JTF2: Joint-Trouble-Free for TD2"
 Global AppNameShort := "JTF2"
 Global AppIconPath := "JTF2.ico"
 Global Version := "0.0.1"
@@ -20,7 +20,7 @@ Global HorizontalMargin := 8
 Global VerticalMargin := 4
 
 ; Setting limits
-Global IntervalMinimum := 10
+Global IntervalMinimum := 50
 Global IntervalMaximum := 10000
 
 ; Entry
@@ -41,9 +41,9 @@ AppMain()
     Menu, Tray, Icon, %AppIconPath%, 1, 1
 
     CreateGuiControls()
+    SetupDefaultHotkeys()
+    SetAutoClickInterval(%IntervalMinimum%)
     DetectGameProcess()
-
-    Return
 }
 
 AppExit()
@@ -53,17 +53,27 @@ AppExit()
 
 ;===============================================================
 
+; Gui controls
+Global HKToggleActivation
 Global HKToggleAC
 Global HKRotateACMode
-Global HKToggleUseAlterKey
-Global HKToggleOpenInvCacheMacro
-Global HKToggleOpenApparelCacheMacro
-Global HKToggleSubmitElevatorMacro
-
+Global HKAlterClickKey
+Global HKRunOpenInvCacheMacro
+Global HKRunOpenApparelCacheMacro
+Global HKRunSummitElevatorMacro
 Global TxtGameProcDetect
+Global TxtClickPerSec
+Global TxtRPM
 Global BtnHelp
+Global EBInterval
 Global SBStatus
 
+; Global variables
+Global bGameProcessDetected := False
+Global bGameProcessFocused := False
+Global AutoClickInterval := IntervalMinimum
+
+; Gui events
 EventBtnRun:
 Run %LaunchCommand%
 Return
@@ -79,7 +89,7 @@ Return
 CreateGuiControls()
 {
     Gui Add, CheckBox, x8 y4 w60 h20, Activate
-    Gui Add, Hotkey, x72 y4 w84 h20
+    Gui Add, Hotkey, x72 y4 w84 h20, vHKToggleActivation
     Gui Add, Text, x402 y7 w60 h20 vTxtGameProcDetect, {ProcDetect}
     Gui Add, Button, x470 y4 w48 h20 gEventBtnRun, Run
     Gui Add, Button, x518 y4 w18 h20 vBtnHelp gEventBtnHelp, ?
@@ -89,31 +99,31 @@ CreateGuiControls()
     Gui Add, Text, x20 y74 w120 h20 +0x200, Toggle Enability
     Gui Add, Hotkey, x142 y74 w84 h20 vHKToggleAC
     Gui Add, Text, x20 y96 w120 h20 +0x200, Interval
-    Gui Add, Edit, x142 y96 w52 h20 +Number, {Intv}
+    Gui Add, Edit, x142 y96 w52 h20 +Number vEBInterval, {Intv}
     Gui Add, Text, x200 y96 w24 h20 +0x200, ms
     Gui Add, Text, x240 y96 w84 h20 +0x200, (%IntervalMinimum% - %IntervalMaximum% ms)
-    Gui Add, Text, x142 y118 w32 h20 +0x200, {CPS}
+    Gui Add, Text, x142 y118 w32 h20 +0x200 vTxtClickPerSec, {CPS}
     Gui Add, Text, x180 y118 w48 h20 +0x200, Click/s
     Gui Add, Text, x222 y118 w20 h20 +0x200, ⇒
-    Gui Add, Text, x240 y118 w20 h20 +0x200, {RPM}
-    Gui Add, Text, x262 y118 w48 h20 +0x200, RPM
+    Gui Add, Text, x240 y118 w48 h20 +0x200 vTxtRPM, {RPM}
+    Gui Add, Text, x288 y118 w48 h20 +0x200, RPM
     Gui Add, Text, x20 y142 w120 h20 +0x200, Mode
     Gui Add, Radio, x142 y142 w120 h20, Press to Auto-Click
     Gui Add, Radio, x142 y160 w120 h20, On/Off Repeat
     Gui Add, CheckBox, x20 y188 w120 h20, Toggle Mode by
     Gui Add, Hotkey, x142 y188 w84 h20 vHKRotateACMode
     Gui Add, CheckBox, x20 y210 w120 h20, Use Alternative Key
-    Gui Add, Hotkey, x142 y210 w84 h20 vHKToggleUseAlterKey
+    Gui Add, Hotkey, x142 y210 w84 h20 vHKAlterClickKey
 
     Gui Add, GroupBox, x336 y32 w200 h76, Auto-Open Cache
     Gui Add, CheckBox, x352 y52 w84 h20, Inventory
-    Gui Add, Hotkey, x440 y52 w24 w84 vHKToggleOpenInvCacheMacro
+    Gui Add, Hotkey, x440 y52 w24 w84 vHKRunOpenInvCacheMacro
     Gui Add, CheckBox, x352 y74 w84 h20, Apparel
-    Gui Add, Hotkey, x440 y74 w24 w84 vHKToggleOpenApparelCacheMacro
+    Gui Add, Hotkey, x440 y74 w24 w84 vHKRunOpenApparelCacheMacro
 
     Gui Add, GroupBox, x336 y112 w200 h54, Other Macros
     Gui Add, CheckBox, x352 y132 w84 h20, Summit Ev.
-    Gui Add, Hotkey, x440 y132 w24 w84 vHKToggleSubmitElevatorMacro
+    Gui Add, Hotkey, x440 y132 w24 w84 vHKRunSummitElevatorMacro
 
     Gui Add, CheckBox, x338 y192 w120 h20, Close on game exit
     Gui Add, Button, x336 y212 w64 h32, {Edit}
@@ -133,24 +143,9 @@ CreateGuiControls()
 
 UpdateGuiControls()
 {
-    If IsGameProcessDetected()
-    {
-        GuiControl, Move, TxtGameProcDetect, x348 y7 w120 h20
-        GuiControl, +cEF6C00, TxtGameProcDetect
-        GuiControl,, TxtGameProcDetect, SHD Network Detected
-    }
-    Else
-    {
-        GuiControl, Move, TxtGameProcDetect, x404 y7 w60 h20
-        GuiControl, +cD80100, TxtGameProcDetect
-        GuiControl,, TxtGameProcDetect, ISAC Offline
-    }
 }
 
 ;===============================================================
-
-Global bGameProcessDetected := False
-Global bGameProcessFocused := False
 
 Timer_DetectGameProcess:
 RunDetectGameProcess()
@@ -174,10 +169,16 @@ RunDetectGameProcess()
         If bDetected
         {
             ; OnGameProcessDetected()
+            GuiControl, Move, TxtGameProcDetect, x348 y7 w120 h20
+            GuiControl, +cEF6C00, TxtGameProcDetect
+            GuiControl,, TxtGameProcDetect, SHD Network Detected
         }
         Else
         {
             ; OnGameProcessLost()
+            GuiControl, Move, TxtGameProcDetect, x404 y7 w60 h20
+            GuiControl, +cD80100, TxtGameProcDetect
+            GuiControl,, TxtGameProcDetect, ISAC Offline
         }
         bUpdateGuiControls := True
     }
@@ -218,3 +219,42 @@ IsGameProcessFocused()
 }
 
 ;===============================================================
+
+SetupDefaultHotkeys()
+{
+    GuiControl,, HKToggleActivation, ``
+    GuiControl,, HKToggleAC, XButton1
+    GuiControl,, HKRotateACMode, !C
+    GuiControl,, HKAlterClickKey, C
+    GuiControl,, HKRunOpenInvCacheMacro, F9
+    GuiControl,, HKRunOpenApparelCacheMacro, F10
+    GuiControl,, HKRunSummitElevatorMacro, F11
+}
+
+;===============================================================
+
+SetAutoClickInterval(Interval)
+{
+    If (Interval < IntervalMinimum)
+    {
+        Interval := IntervalMinimum
+    }
+    If (Interval > IntervalMaximum)
+    {
+        Interval := IntervalMaximum
+    }
+
+    If (AutoClickInterval != Interval)
+    {
+        AutoClickInterval := Interval
+
+        ; OnAutoClickIntervalChanged()
+        ClickPerSec := 1000.0 / AutoClickInterval
+        ClickPerSecStr := Format("{1:0.2f}", ClickPerSec)
+        RPM := ClickPerSec * 60
+        RPMStr := Format("{1:0.2f}", RPM)
+        GuiControl,, EBInterval, %AutoClickInterval%
+        GuiControl,, TxtClickPerSec, %ClickPerSecStr%
+        GuiControl,, TxtRPM, %RPMStr%
+    }
+}
