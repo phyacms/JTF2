@@ -41,9 +41,6 @@ AppMain()
     Menu, Tray, Icon, %AppIconPath%, 1, 1
 
     CreateGuiControls()
-    SetupHotkeyControls()
-    SetEditMode(False)
-    SetAutoClickInterval(%IntervalMinimum%)
 
     DetectGameProcess()
 }
@@ -74,7 +71,7 @@ Global SBStatus
 ; Global variables
 Global bGameProcessDetected := False
 Global bGameProcessFocused := False
-Global bEditing := False
+Global bEditing := True
 Global AutoClickInterval := IntervalMinimum
 
 ; Gui events
@@ -141,12 +138,27 @@ CreateGuiControls()
     VersionTxt := " v" + Version
     Gui Add, StatusBar, vSBStatus, %VersionTxt%
 
+    SetupGuiControls()
+    SetEditMode(False)
+
     UpdateGuiControls()
     GuiControl, Focus, BtnHelp
 
     Gui Show, w%WindowWidth% h%Window24%, %AppName%
 
     Return
+}
+
+SetupGuiControls()
+{
+    GuiControl,, HKToggleActivation, ``
+    GuiControl,, HKToggleAC, XButton1
+    GuiControl,, HKRotateACMode, !C
+    GuiControl,, HKAlterClickKey, C
+    GuiControl,, HKRunOpenInvCacheMacro, F9
+    GuiControl,, HKRunOpenApparelCacheMacro, F10
+    GuiControl,, HKRunSummitElevatorMacro, F11
+    GuiControl,, EBInterval, %IntervalMinimum%
 }
 
 UpdateGuiControls()
@@ -167,13 +179,11 @@ SetEditMode(bEdit)
         bEditing := bEdit
         If bEdit
         {
-            ; OnEdit
-            GuiControl,, BtnEdit, Done
+            EditSettings()
         }
         Else
         {
-            ; OnApply
-            GuiControl,, BtnEdit, Edit
+            ApplySettings()
         }
         UpdateGuiControls()
     }
@@ -182,6 +192,21 @@ SetEditMode(bEdit)
 IsEditing()
 {
     Return bEditing
+}
+
+EditSettings()
+{
+    GuiControl,, BtnEdit, Done
+}
+
+ApplySettings()
+{
+    GuiControl,, BtnEdit, Edit
+
+    Gui, Submit, NoHide
+
+    GuiControlGet, Interval,, EBInterval
+    SetAutoClickInterval(Interval)
 }
 
 ;===============================================================
@@ -259,31 +284,13 @@ IsGameProcessFocused()
 
 ;===============================================================
 
-SetupHotkeyControls()
-{
-    SetupDefaultHotkeyControls()
-}
-
-SetupDefaultHotkeyControls()
-{
-    GuiControl,, HKToggleActivation, ``
-    GuiControl,, HKToggleAC, XButton1
-    GuiControl,, HKRotateACMode, !C
-    GuiControl,, HKAlterClickKey, C
-    GuiControl,, HKRunOpenInvCacheMacro, F9
-    GuiControl,, HKRunOpenApparelCacheMacro, F10
-    GuiControl,, HKRunSummitElevatorMacro, F11
-}
-
-;===============================================================
-
 SetAutoClickInterval(Interval)
 {
-    If Interval < IntervalMinimum
+    If Interval < %IntervalMinimum%
     {
         Interval := IntervalMinimum
     }
-    If Interval > IntervalMaximum
+    If Interval > %IntervalMaximum%
     {
         Interval := IntervalMaximum
     }
@@ -291,14 +298,16 @@ SetAutoClickInterval(Interval)
     If AutoClickInterval != Interval
     {
         AutoClickInterval := Interval
-
-        ; OnAutoClickIntervalChanged()
-        RPM := 60.0 * 1000.0 / AutoClickInterval
-        RPMStr := Format("{1:0.2f}", RPM)
-        ClickPerSec := RPM / 60.0
-        ClickPerSecStr := Format("{1:0.2f}", ClickPerSec)
-        GuiControl,, EBInterval, %AutoClickInterval%
-        GuiControl,, TxtClickPerSec, %ClickPerSecStr%
-        GuiControl,, TxtRPM, %RPMStr%
+        OnAutoClickIntervalChanged()
     }
+}
+
+OnAutoClickIntervalChanged()
+{
+    RPM := 60.0 * 1000.0 / AutoClickInterval
+    RPMStr := Format("{1:0.2f}", RPM)
+    ClickPerSec := RPM / 60.0
+    ClickPerSecStr := Format("{1:0.2f}", ClickPerSec)
+    GuiControl,, TxtClickPerSec, %ClickPerSecStr%
+    GuiControl,, TxtRPM, %RPMStr%
 }
