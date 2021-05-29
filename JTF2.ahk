@@ -65,15 +65,16 @@ Global TxtRPM
 Global BtnHelp
 Global BtnEdit
 Global EBInterval
+Global RadioAutoClickPressMode
+Global RadioAutoClickRepeatMode
 Global CBActivate
 Global CBToggleAutoClick
 Global CBToggleAutoClickModeByHotkey
+Global CBUseAlterClickKey
 Global CBRunOpenInventoryCacheMacro
 Global CBRunOpenApparelCacheMacro
 Global CBRunSummitEvMacro
 Global CBCloseOnGameExit
-
-Global CBUseAlterClickKey
 Global SBStatus
 
 ; Global variables
@@ -84,6 +85,7 @@ Global bEditing := True
 Global AutoClickInterval := IntervalMinimum
 
 ; Gui events
+
 EventBtnRun:
 Run %LaunchCommand%
 Return
@@ -100,12 +102,7 @@ EventBtnClose:
 AppExit()
 Return
 
-EventCBActivate:
-EventCBToggleAutoClick:
-EventCBToggleAutoClickModeByHotkey:
-EventCBRunOpenInventoryCacheMacro:
-EventCBRunOpenApparelCacheMacro:
-EventCBRunSummitEvMacro:
+EventResetHotkeyBindings:
 ResetHotkeyBindings()
 Return
 
@@ -126,6 +123,7 @@ HKAlterClickKey:
 HKRunOpenInventoryCacheMacro:
 HKRunOpenApparelCacheMacro:
 HKRunSummitEvMacro:
+; @WIP
 MsgBox, HotKeyEvent Occured
 Return
 
@@ -133,14 +131,14 @@ Return
 
 CreateGuiControls()
 {
-    Gui Add, CheckBox, x8 y4 w60 h20 vCBActivate gEventCBActivate, Activate
+    Gui Add, CheckBox, x8 y4 w60 h20 vCBActivate gEventResetHotkeyBindings, Activate
     Gui Add, Hotkey, x72 y4 w84 h20 vHKToggleActivation
     Gui Add, Text, x402 y7 w60 h20 vTxtGameProcDetect, {ProcDetect}
     Gui Add, Button, x470 y4 w48 h20 gEventBtnRun, Run
     Gui Add, Button, x518 y4 w18 h20 vBtnHelp gEventBtnHelp, ?
 
     Gui Add, GroupBox, x8 y32 w324 h212, Auto-Click
-    Gui Add, CheckBox, x20 y52 w120 h20 vCBToggleAutoClick gEventCBToggleAutoClick, Enable Auto-Click
+    Gui Add, CheckBox, x20 y52 w120 h20 vCBToggleAutoClick gEventResetHotkeyBindings, Enable Auto-Click
     Gui Add, Text, x20 y74 w120 h20 +0x200, Toggle Enability
     Gui Add, Hotkey, x142 y74 w84 h20 vHKToggleAutoClick
     Gui Add, Text, x20 y96 w120 h20 +0x200, Interval
@@ -153,21 +151,21 @@ CreateGuiControls()
     Gui Add, Text, x240 y118 w48 h20 +0x200 vTxtRPM, {RPM}
     Gui Add, Text, x288 y118 w48 h20 +0x200, RPM
     Gui Add, Text, x20 y142 w120 h20 +0x200, Mode
-    Gui Add, Radio, x142 y142 w120 h20, Press to Auto-Click
-    Gui Add, Radio, x142 y160 w120 h20, On/Off Repeat
-    Gui Add, CheckBox, x20 y188 w120 h20 vCBToggleAutoClickModeByHotkey gEventCBToggleAutoClickModeByHotkey, Toggle Mode by
+    Gui Add, Radio, x142 y142 w120 h20 vRadioAutoClickPressMode, Press to Auto-Click
+    Gui Add, Radio, x142 y160 w120 h20 vRadioAutoClickRepeatMode, On/Off Repeat
+    Gui Add, CheckBox, x20 y188 w120 h20 vCBToggleAutoClickModeByHotkey gEventResetHotkeyBindings, Toggle Mode by
     Gui Add, Hotkey, x142 y188 w84 h20 vHKRotateAutoClickMode
     Gui Add, CheckBox, x20 y210 w120 h20 vCBUseAlterClickKey, Use Alternative Key
     Gui Add, Hotkey, x142 y210 w84 h20 vHKAlterClickKey
 
     Gui Add, GroupBox, x336 y32 w200 h76, Auto-Open Cache
-    Gui Add, CheckBox, x352 y52 w84 h20 vCBRunOpenInventoryCacheMacro gEventCBRunOpenInventoryCacheMacro, Inventory
+    Gui Add, CheckBox, x352 y52 w84 h20 vCBRunOpenInventoryCacheMacro gEventResetHotkeyBindings, Inventory
     Gui Add, Hotkey, x440 y52 w24 w84 vHKRunOpenInventoryCacheMacro
-    Gui Add, CheckBox, x352 y74 w84 h20 vCBRunOpenApparelCacheMacro gEventCBRunOpenApparelCacheMacro, Apparel
+    Gui Add, CheckBox, x352 y74 w84 h20 vCBRunOpenApparelCacheMacro gEventResetHotkeyBindings, Apparel
     Gui Add, Hotkey, x440 y74 w24 w84 vHKRunOpenApparelCacheMacro
 
     Gui Add, GroupBox, x336 y112 w200 h54, Other Macros
-    Gui Add, CheckBox, x352 y132 w84 h20 vCBRunSummitEvMacro gEventCBRunSummitEvMacro, Summit Ev.
+    Gui Add, CheckBox, x352 y132 w84 h20 vCBRunSummitEvMacro gEventResetHotkeyBindings, Summit Ev.
     Gui Add, Hotkey, x440 y132 w24 w84 vHKRunSummitEvMacro
 
     Gui Add, CheckBox, x338 y192 w120 h20 vCBCloseOnGameExit, Close on game exit
@@ -198,6 +196,7 @@ SetupGuiControls()
     GuiControl,, HKRunSummitEvMacro, F11
 
     GuiControl,, EBInterval, %IntervalMinimum%
+    GuiControl,, RadioAutoClickPressMode, 1
     GuiControl,, CBRunOpenInventoryCacheMacro, 1
     GuiControl,, CBRunOpenApparelCacheMacro, 1
     GuiControl,, CBCloseOnGameExit, 1
