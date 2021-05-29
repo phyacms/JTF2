@@ -98,6 +98,11 @@ EventBtnEdit:
 ToggleEditMode()
 Return
 
+EventBtnSetToDefault:
+SetupGuiControls(True)
+ApplySettings()
+Return
+
 EventBtnClose:
 AppExit()
 Return
@@ -170,13 +175,13 @@ CreateGuiControls()
 
     Gui Add, CheckBox, x338 y192 w120 h20 vCBCloseOnGameExit, Close on game exit
     Gui Add, Button, x336 y212 w64 h32 vBtnEdit gEventBtnEdit, {Edit}
-    Gui Add, Button, x400 y212 w52 h32, Set to Default
+    Gui Add, Button, x400 y212 w52 h32 gEventBtnSetToDefault, Set to Default
     Gui Add, Button, x472 y212 w64 h32 gEventBtnClose, Close
 
     VersionTxt := " v" + Version
     Gui Add, StatusBar, vSBStatus, %VersionTxt%
 
-    SetupGuiControls()
+    SetupGuiControls(False)
     ApplySettings()
 
     GuiControl, Focus, BtnHelp
@@ -185,7 +190,7 @@ CreateGuiControls()
     Return
 }
 
-SetupGuiControls()
+SetupGuiControls(bUseDefault)
 {
     GuiControl,, HKToggleActivation, ``
     GuiControl,, HKToggleAutoClick, XButton1
@@ -197,13 +202,26 @@ SetupGuiControls()
 
     GuiControl,, EBInterval, %IntervalMinimum%
     GuiControl,, RadioAutoClickPressMode, 1
+    GuiControl,, CBToggleAutoClick, 0
+    GuiControl,, CBToggleAutoClickModeByHotkey, 0
+    GuiControl,, CBUseAlterClickKey, 0
     GuiControl,, CBRunOpenInventoryCacheMacro, 1
     GuiControl,, CBRunOpenApparelCacheMacro, 1
+    GuiControl,, CBRunSummitEvMacro, 0
     GuiControl,, CBCloseOnGameExit, 1
 }
 
 UpdateGuiControls()
 {
+    If IsEditing()
+    {
+        GuiControl,, BtnEdit, Done
+    }
+    Else
+    {
+        GuiControl,, BtnEdit, Edit
+    }
+
     ; @WIP
 }
 
@@ -221,7 +239,6 @@ SetEditMode(bEdit)
         bEditing := bEdit
         If bEdit
         {
-            EditSettings()
             UpdateGuiControls()
         }
         Else
@@ -236,15 +253,8 @@ IsEditing()
     Return bEditing
 }
 
-EditSettings()
-{
-    GuiControl,, BtnEdit, Done
-}
-
 ApplySettings()
 {
-    GuiControl,, BtnEdit, Edit
-
     GuiControlGet, Interval,, EBInterval
     SetAutoClickInterval(Interval)
 
