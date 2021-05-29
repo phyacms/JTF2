@@ -62,6 +62,7 @@ Global HKToggleSubmitElevatorMacro
 
 Global TxtGameProcDetect
 Global BtnHelp
+Global SBStatus
 
 EventBtnRun:
 Run %LaunchCommand%
@@ -120,7 +121,7 @@ CreateGuiControls()
     Gui Add, Button, x472 y212 w64 h32 gEventBtnClose, Close
 
     VersionTxt := " v" + Version
-    Gui Add, StatusBar,, %VersionTxt%
+    Gui Add, StatusBar, vSBStatus, %VersionTxt%
 
     GuiControl, Focus, BtnHelp
     Gui Show, w%WindowWidth% h%Window24%, %AppName%
@@ -131,12 +132,18 @@ CreateGuiControls()
 ;===============================================================
 
 Global bGameProcessDetected := False
+Global bGameProcessFocused := False
 
 Timer_DetectGameProcess:
-DetectGameProcess()
+RunDetectGameProcess()
 Return
 
 DetectGameProcess()
+{
+    SetTimer, Timer_DetectGameProcess, 100
+}
+
+RunDetectGameProcess()
 {
     Process, Exist, %GameProcessName%
     ErrLv := ErrorLevel
@@ -154,12 +161,28 @@ DetectGameProcess()
             OnGameProcessLost()
         }
     }
+
+    If (bGameProcessDetected)
+    {
+        WinGet, ActiveProc, ProcessName, A
+        bFocused := ActiveProc = GameProcessName
+        If (bGameProcessFocused != bFocused)
+        {
+            bGameProcessFocused := bFocused
+            If (bFocused)
+            {
+                OnGameProcessFocused()
+            }
+            Else
+            {
+                OnGameProcessFocusLost()
+            }
+        }
+    }
 }
 
 OnGameProcessDetected()
 {
-    SetTimer, Timer_DetectGameProcess, 1000
-
     GuiControl, Move, TxtGameProcDetect, x348 y7 w120 h20
     GuiControl, +cEF6C00, TxtGameProcDetect
     GuiControl,, TxtGameProcDetect, SHD Network Detected
@@ -167,16 +190,27 @@ OnGameProcessDetected()
 
 OnGameProcessLost()
 {
-    SetTimer, Timer_DetectGameProcess, 100
-
     GuiControl, Move, TxtGameProcDetect, x404 y7 w60 h20
     GuiControl, +cD80100, TxtGameProcDetect
     GuiControl,, TxtGameProcDetect, ISAC Offline
 }
 
+OnGameProcessFocused()
+{
+}
+
+OnGameProcessFocusLost()
+{
+}
+
 IsGameProcessDetected()
 {
     Return bGameProcessDetected
+}
+
+IsGameProcessFocused()
+{
+    Return bGameProcessFocused
 }
 
 ;===============================================================
