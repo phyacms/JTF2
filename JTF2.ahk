@@ -77,6 +77,7 @@ Global CBUseAlterClickKey
 Global SBStatus
 
 ; Global variables
+Global bGameProcessDetectedOnce := False
 Global bGameProcessDetected := False
 Global bGameProcessFocused := False
 Global bEditing := True
@@ -106,12 +107,19 @@ EventCBRunOpenInventoryCacheMacro:
 EventCBRunOpenApparelCacheMacro:
 EventCBRunSummitEvMacro:
 ResetHotkeyBindings()
-UpdateGuiControls()
 Return
 
 ; Hotkey events
 
 HKToggleActivation:
+GuiControlGet, bActivated,, CBActivate
+If bActivated
+    GuiControl,, CBActivate, 0
+Else
+    GuiControl,, CBActivate, 1
+ResetHotkeyBindings()
+Return
+
 HKToggleAutoClick:
 HKRotateAutoClickMode:
 HKAlterClickKey:
@@ -173,7 +181,6 @@ CreateGuiControls()
     SetupGuiControls()
     ApplySettings()
 
-    UpdateGuiControls()
     GuiControl, Focus, BtnHelp
     Gui Show, w%WindowWidth% h%Window24%, %AppName%
 
@@ -216,12 +223,12 @@ SetEditMode(bEdit)
         If bEdit
         {
             EditSettings()
+            UpdateGuiControls()
         }
         Else
         {
             ApplySettings()
         }
-        UpdateGuiControls()
     }
 }
 
@@ -242,15 +249,7 @@ ApplySettings()
     GuiControlGet, Interval,, EBInterval
     SetAutoClickInterval(Interval)
 
-    If Not !HKToggleActivation
-    {
-        Hotkey, %HKToggleActivation%, HKToggleActivation, Off
-    }
     ResetHotkeyBindings()
-    If Not !HKToggleActivation
-    {
-        Hotkey, %HKToggleActivation%, HKToggleActivation, On
-    }
 }
 
 ;===============================================================
@@ -266,8 +265,6 @@ DetectGameProcess()
 
 RunDetectGameProcess()
 {
-    bUpdateGuiControls := False
-
     Process, Exist, %GameProcessName%
     ErrLv := ErrorLevel
     bDetected := ErrLv != 0
@@ -282,7 +279,7 @@ RunDetectGameProcess()
         {
             OnGameProcessLost()
         }
-        bUpdateGuiControls := True
+        UpdateGuiControls()
     }
 
     If bGameProcessDetected
@@ -301,18 +298,14 @@ RunDetectGameProcess()
                 ; OnGameProcessFocusLost()
             }
             ResetHotkeyBindings()
-            bUpdateGuiControls := True
         }
-    }
-
-    If bUpdateGuiControls
-    {
-        UpdateGuiControls()
     }
 }
 
 OnGameProcessDetected()
 {
+    bGameProcessDetectedOnce := True
+    
     GuiControl, Move, TxtGameProcDetect, x348 y7 w120 h20
     GuiControl, +cEF6C00, TxtGameProcDetect
     GuiControl,, TxtGameProcDetect, SHD Network Detected
@@ -320,8 +313,8 @@ OnGameProcessDetected()
 
 OnGameProcessLost()
 {
-    GuiControlGet, bClose,, CBCloseOnGameExit
-    If bClose
+    GuiControlGet, bCloseOnGameExit,, CBCloseOnGameExit
+    If IsGameProcessDetectedOnce() && bCloseOnGameExit
     {
         AppExit()
         Return
@@ -330,6 +323,11 @@ OnGameProcessLost()
     GuiControl, Move, TxtGameProcDetect, x404 y7 w60 h20
     GuiControl, +cD80100, TxtGameProcDetect
     GuiControl,, TxtGameProcDetect, ISAC Offline
+}
+
+IsGameProcessDetectedOnce()
+{
+    Return bGameProcessDetectedOnce
 }
 
 IsGameProcessDetected()
@@ -357,48 +355,59 @@ ResetHotkeyBindings()
     UnbindAllHotkeyBindings()
     Gui, Submit, NoHide
     BindHotkeyBindingsConditional()
+    UpdateGuiControls()
 }
 
 BindHotkeyBindingsConditional()
 {
-    ; @WIP
-    If IsGameProcessFocused() && IsActivated()
+    If IsGameProcessFocused()
     {
-        GuiControlGet, bChk,, CBToggleAutoClick
-        If bChk && Not !HKToggleAutoClick
+        If Not !HKToggleActivation
         {
-            Hotkey, %HKToggleAutoClick%, HKToggleAutoClick, On
+            Hotkey, %HKToggleActivation%, HKToggleActivation, On
         }
-        GuiControlGet, bChk,, CBToggleAutoClickModeByHotkey
-        If bChk && Not !HKRotateAutoClickMode
+        If IsActivated()
         {
-            Hotkey, %HKRotateAutoClickMode%, HKRotateAutoClickMode, On
-        }
-        GuiControlGet, bChk,, CBUseAlterClickKey
-        If bChk && Not !HKAlterClickKey
-        {
-            Hotkey, %HKAlterClickKey%, HKAlterClickKey, On
-        }
-        GuiControlGet, bChk,, CBRunOpenInventoryCacheMacro
-        If bChk && Not !HKRunOpenInventoryCacheMacro
-        {
-            Hotkey, %HKRunOpenInventoryCacheMacro%, HKRunOpenInventoryCacheMacro, On
-        }
-        GuiControlGet, bChk,, CBRunOpenApparelCacheMacro
-        If bChk && Not !HKRunOpenApparelCacheMacro
-        {
-            Hotkey, %HKRunOpenApparelCacheMacro%, HKRunOpenApparelCacheMacro, On
-        }
-        GuiControlGet, bChk,, CBRunSummitEvMacro
-        If bChk && Not !HKRunSummitEvMacro
-        {
-            Hotkey, %HKRunSummitEvMacro%, HKRunSummitEvMacro, On
+            GuiControlGet, bChk,, CBToggleAutoClick
+            If bChk && Not !HKToggleAutoClick
+            {
+                Hotkey, %HKToggleAutoClick%, HKToggleAutoClick, On
+            }
+            GuiControlGet, bChk,, CBToggleAutoClickModeByHotkey
+            If bChk && Not !HKRotateAutoClickMode
+            {
+                Hotkey, %HKRotateAutoClickMode%, HKRotateAutoClickMode, On
+            }
+            GuiControlGet, bChk,, CBUseAlterClickKey
+            If bChk && Not !HKAlterClickKey
+            {
+                Hotkey, %HKAlterClickKey%, HKAlterClickKey, On
+            }
+            GuiControlGet, bChk,, CBRunOpenInventoryCacheMacro
+            If bChk && Not !HKRunOpenInventoryCacheMacro
+            {
+                Hotkey, %HKRunOpenInventoryCacheMacro%, HKRunOpenInventoryCacheMacro, On
+            }
+            GuiControlGet, bChk,, CBRunOpenApparelCacheMacro
+            If bChk && Not !HKRunOpenApparelCacheMacro
+            {
+                Hotkey, %HKRunOpenApparelCacheMacro%, HKRunOpenApparelCacheMacro, On
+            }
+            GuiControlGet, bChk,, CBRunSummitEvMacro
+            If bChk && Not !HKRunSummitEvMacro
+            {
+                Hotkey, %HKRunSummitEvMacro%, HKRunSummitEvMacro, On
+            }
         }
     }
 }
 
 UnbindAllHotkeyBindings()
 {
+    If Not !HKToggleActivation
+    {
+        Hotkey, %HKToggleActivation%, HKToggleActivation, Off
+    }
     If Not !HKToggleAutoClick
     {
         Hotkey, %HKToggleAutoClick%, HKToggleAutoClick, Off
