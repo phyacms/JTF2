@@ -30,7 +30,7 @@ Return
 ;===============================================================
 
 GuiClose:
-ExitApp
+AppExit()
 
 ; Main function
 AppMain()
@@ -41,8 +41,14 @@ AppMain()
     Menu, Tray, Icon, %AppIconPath%, 1, 1
 
     CreateGuiControls()
+    DetectGameProcess()
 
     Return
+}
+
+AppExit()
+{
+    ExitApp
 }
 
 ;===============================================================
@@ -54,6 +60,7 @@ Global HKToggleOpenInvCacheMacro
 Global HKToggleOpenApparelCacheMacro
 Global HKToggleSubmitElevatorMacro
 
+Global TxtGameProcDetect
 Global BtnHelp
 
 EventBtnRun:
@@ -64,11 +71,15 @@ EventBtnHelp:
 Run %RepositoryLink%
 Return
 
+EventBtnClose:
+AppExit()
+Return
+
 CreateGuiControls()
 {
     Gui Add, CheckBox, x8 y4 w60 h20, Activate
     Gui Add, Hotkey, x72 y4 w84 h20
-    Gui Add, Text, x402 y7 w60 h20, {ProcDetect}
+    Gui Add, Text, x402 y7 w60 h20 vTxtGameProcDetect, {ProcDetect}
     Gui Add, Button, x470 y4 w48 h20 gEventBtnRun, Run
     Gui Add, Button, x518 y4 w18 h20 vBtnHelp gEventBtnHelp, ?
 
@@ -106,7 +117,7 @@ CreateGuiControls()
     Gui Add, CheckBox, x338 y192 w120 h20, Close on game exit
     Gui Add, Button, x336 y212 w64 h32, {Edit}
     Gui Add, Button, x400 y212 w52 h32, Set to Default
-    Gui Add, Button, x472 y212 w64 h32, Close
+    Gui Add, Button, x472 y212 w64 h32 gEventBtnClose, Close
 
     VersionTxt := " v" + Version
     Gui Add, StatusBar,, %VersionTxt%
@@ -116,3 +127,56 @@ CreateGuiControls()
 
     Return
 }
+
+;===============================================================
+
+Global bGameProcessDetected := False
+
+Timer_DetectGameProcess:
+DetectGameProcess()
+Return
+
+DetectGameProcess()
+{
+    Process, Exist, %GameProcessName%
+    ErrLv := ErrorLevel
+    bDetected := ErrLv != 0
+
+    If (bGameProcessDetected != bDetected)
+    {
+        bGameProcessDetected := bDetected
+        If bDetected
+        {
+            OnGameProcessDetected()
+        }
+        Else
+        {
+            OnGameProcessLost()
+        }
+    }
+}
+
+OnGameProcessDetected()
+{
+    SetTimer, Timer_DetectGameProcess, 1000
+
+    GuiControl, Move, TxtGameProcDetect, x348 y7 w120 h20
+    GuiControl, +cEF6C00, TxtGameProcDetect
+    GuiControl,, TxtGameProcDetect, SHD Network Detected
+}
+
+OnGameProcessLost()
+{
+    SetTimer, Timer_DetectGameProcess, 100
+
+    GuiControl, Move, TxtGameProcDetect, x404 y7 w60 h20
+    GuiControl, +cD80100, TxtGameProcDetect
+    GuiControl,, TxtGameProcDetect, ISAC Offline
+}
+
+IsGameProcessDetected()
+{
+    Return bGameProcessDetected
+}
+
+;===============================================================
