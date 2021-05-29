@@ -123,10 +123,28 @@ CreateGuiControls()
     VersionTxt := " v" + Version
     Gui Add, StatusBar, vSBStatus, %VersionTxt%
 
+    UpdateGuiControls()
     GuiControl, Focus, BtnHelp
+
     Gui Show, w%WindowWidth% h%Window24%, %AppName%
 
     Return
+}
+
+UpdateGuiControls()
+{
+    If IsGameProcessDetected()
+    {
+        GuiControl, Move, TxtGameProcDetect, x348 y7 w120 h20
+        GuiControl, +cEF6C00, TxtGameProcDetect
+        GuiControl,, TxtGameProcDetect, SHD Network Detected
+    }
+    Else
+    {
+        GuiControl, Move, TxtGameProcDetect, x404 y7 w60 h20
+        GuiControl, +cD80100, TxtGameProcDetect
+        GuiControl,, TxtGameProcDetect, ISAC Offline
+    }
 }
 
 ;===============================================================
@@ -145,62 +163,48 @@ DetectGameProcess()
 
 RunDetectGameProcess()
 {
+    bUpdateGuiControls := False
+
     Process, Exist, %GameProcessName%
     ErrLv := ErrorLevel
     bDetected := ErrLv != 0
-
-    If (bGameProcessDetected != bDetected)
+    If bGameProcessDetected != bDetected
     {
         bGameProcessDetected := bDetected
         If bDetected
         {
-            OnGameProcessDetected()
+            ; OnGameProcessDetected()
         }
         Else
         {
-            OnGameProcessLost()
+            ; OnGameProcessLost()
         }
+        bUpdateGuiControls := True
     }
 
-    If (bGameProcessDetected)
+    If bGameProcessDetected
     {
         WinGet, ActiveProc, ProcessName, A
         bFocused := ActiveProc = GameProcessName
-        If (bGameProcessFocused != bFocused)
+        If bGameProcessFocused != bFocused
         {
             bGameProcessFocused := bFocused
-            If (bFocused)
+            If bFocused
             {
-                OnGameProcessFocused()
+                ; OnGameProcessFocused()
             }
             Else
             {
-                OnGameProcessFocusLost()
+                ; OnGameProcessFocusLost()
             }
+            bUpdateGuiControls := True
         }
     }
-}
 
-OnGameProcessDetected()
-{
-    GuiControl, Move, TxtGameProcDetect, x348 y7 w120 h20
-    GuiControl, +cEF6C00, TxtGameProcDetect
-    GuiControl,, TxtGameProcDetect, SHD Network Detected
-}
-
-OnGameProcessLost()
-{
-    GuiControl, Move, TxtGameProcDetect, x404 y7 w60 h20
-    GuiControl, +cD80100, TxtGameProcDetect
-    GuiControl,, TxtGameProcDetect, ISAC Offline
-}
-
-OnGameProcessFocused()
-{
-}
-
-OnGameProcessFocusLost()
-{
+    If bUpdateGuiControls
+    {
+        UpdateGuiControls()
+    }
 }
 
 IsGameProcessDetected()
