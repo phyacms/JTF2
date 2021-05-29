@@ -97,7 +97,7 @@ CreateGuiControls()
     Gui Add, Text, x222 y118 w20 h20 +0x200, ⇒
     Gui Add, Text, x240 y118 w20 h20 +0x200, {RPM}
     Gui Add, Text, x262 y118 w48 h20 +0x200, RPM
-    Gui Add, Text, x20 y142 w120 h20, Mode +0x200
+    Gui Add, Text, x20 y142 w120 h20 +0x200, Mode
     Gui Add, Radio, x142 y142 w120 h20, Press to Auto-Click
     Gui Add, Radio, x142 y160 w120 h20, On/Off Repeat
     Gui Add, CheckBox, x20 y188 w120 h20, Toggle Mode by
