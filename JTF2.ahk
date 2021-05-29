@@ -114,8 +114,8 @@ Return
 ; Hotkey events
 
 HKToggleActivation:
-GuiControlGet, bActivated,, CBActivate
-If bActivated
+GuiControlGet, bChk,, CBActivate
+If bChk
     GuiControl,, CBActivate, 0
 Else
     GuiControl,, CBActivate, 1
@@ -123,13 +123,29 @@ ResetHotkeyBindings()
 Return
 
 HKToggleAutoClick:
+GuiControlGet, bChk,, CBToggleAutoClick
+If bChk
+    GuiControl,, CBToggleAutoClick, 0
+Else
+    GuiControl,, CBToggleAutoClick, 1
+ResetHotkeyBindings()
+Return
+
 HKRotateAutoClickMode:
+; @WIP
+MsgBox, HKRotateAutoClickMode
+Return
+
 HKAlterClickKey:
+; @WIP
+MsgBox, AlterClickKey Occured
+Return
+
 HKRunOpenInventoryCacheMacro:
 HKRunOpenApparelCacheMacro:
 HKRunSummitEvMacro:
 ; @WIP
-MsgBox, HotKeyEvent Occured
+MsgBox, RunMacro Occured
 Return
 
 ; Functions
@@ -314,7 +330,7 @@ RunDetectGameProcess()
 OnGameProcessDetected()
 {
     bGameProcessDetectedOnce := True
-    
+
     GuiControl, Move, TxtGameProcDetect, x348 y7 w120 h20
     GuiControl, +cEF6C00, TxtGameProcDetect
     GuiControl,, TxtGameProcDetect, SHD Network Detected
@@ -375,13 +391,14 @@ BindHotkeyBindingsConditional()
         {
             Hotkey, %HKToggleActivation%, HKToggleActivation, On
         }
+
         If IsActivated()
         {
-            GuiControlGet, bChk,, CBToggleAutoClick
-            If bChk && Not !HKToggleAutoClick
+            If Not !HKToggleAutoClick
             {
                 Hotkey, %HKToggleAutoClick%, HKToggleAutoClick, On
             }
+
             GuiControlGet, bChk,, CBToggleAutoClickModeByHotkey
             If bChk && Not !HKRotateAutoClickMode
             {
@@ -392,6 +409,7 @@ BindHotkeyBindingsConditional()
             {
                 Hotkey, %HKAlterClickKey%, HKAlterClickKey, On
             }
+
             GuiControlGet, bChk,, CBRunOpenInventoryCacheMacro
             If bChk && Not !HKRunOpenInventoryCacheMacro
             {
@@ -402,6 +420,7 @@ BindHotkeyBindingsConditional()
             {
                 Hotkey, %HKRunOpenApparelCacheMacro%, HKRunOpenApparelCacheMacro, On
             }
+
             GuiControlGet, bChk,, CBRunSummitEvMacro
             If bChk && Not !HKRunSummitEvMacro
             {
