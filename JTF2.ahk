@@ -23,6 +23,19 @@ Global VerticalMargin := 4
 Global IntervalMinimum := 50
 Global IntervalMaximum := 10000
 
+; Global constants
+Global AutoClickModeNamePress := "PressMode"
+Global AutoClickModeNameRepeat := "RepeatMode"
+
+; Global variables
+Global bGameProcessDetectedOnce := False
+Global bGameProcessDetected := False
+Global bGameProcessFocused := False
+Global bEditing := False
+Global AutoClickInterval := IntervalMinimum
+Global CurrentAutoClickMode
+Global bAutoClicking := False
+
 ; Entry
 AppMain()
 Return
@@ -41,11 +54,15 @@ AppMain()
     Menu, Tray, Icon, %AppIconPath%, 1, 1
 
     CreateGuiControls()
+
+    OnGameProcessLost()
     DetectGameProcess()
 }
 
 AppExit()
 {
+	SetTimer, Timer_DetectGameProcess, Off
+    FinishAutoClick()
     ExitApp
 }
 
@@ -77,13 +94,6 @@ Global CBRunSummitEvMacro
 Global CBCloseOnGameExit
 Global SBStatus
 
-; Global variables
-Global bGameProcessDetectedOnce := False
-Global bGameProcessDetected := False
-Global bGameProcessFocused := False
-Global bEditing := True
-Global AutoClickInterval := IntervalMinimum
-
 ; Gui events
 
 EventBtnRun:
@@ -107,8 +117,8 @@ EventBtnClose:
 AppExit()
 Return
 
-EventResetHotkeyBindings:
-ResetHotkeyBindings()
+EventUserChangedGuiControl:
+ApplySettings()
 Return
 
 ; Hotkey events
@@ -119,7 +129,7 @@ If bChk
     GuiControl,, CBActivate, 0
 Else
     GuiControl,, CBActivate, 1
-ResetHotkeyBindings()
+ApplySettings()
 Return
 
 HKToggleAutoClick:
@@ -128,17 +138,29 @@ If bChk
     GuiControl,, CBToggleAutoClick, 0
 Else
     GuiControl,, CBToggleAutoClick, 1
-ResetHotkeyBindings()
+ApplySettings()
 Return
 
 HKRotateAutoClickMode:
-; @WIP
-MsgBox, HKRotateAutoClickMode
+GuiControlGet, bPressMode,, RadioAutoClickPressMode
+GuiControlGet, bRepeatMode,, RadioAutoClickRepeatMode
+If bPressMode
+{
+    GuiControl,, RadioAutoClickRepeatMode, 1
+}
+Else If bRepeatMode
+{
+    GuiControl,, RadioAutoClickPressMode, 1
+}
+ApplySettings()
 Return
 
 HKAlterClickKey:
-; @WIP
-MsgBox, AlterClickKey Occured
+GuiControlGet, bChk,, CBUseAlterClickKey
+If bChk
+{
+    OnClick()
+}
 Return
 
 HKRunOpenInventoryCacheMacro:
@@ -148,18 +170,24 @@ HKRunSummitEvMacro:
 MsgBox, RunMacro Occured
 Return
 
+; Key events
+
+~LButton::
+OnClick()
+Return
+
 ; Functions
 
 CreateGuiControls()
 {
-    Gui Add, CheckBox, x8 y4 w60 h20 vCBActivate gEventResetHotkeyBindings, Activate
+    Gui Add, CheckBox, x8 y4 w60 h20 vCBActivate gEventUserChangedGuiControl, Activate
     Gui Add, Hotkey, x72 y4 w84 h20 vHKToggleActivation
     Gui Add, Text, x402 y7 w60 h20 vTxtGameProcDetect, {ProcDetect}
     Gui Add, Button, x470 y4 w48 h20 gEventBtnRun, Run
     Gui Add, Button, x518 y4 w18 h20 vBtnHelp gEventBtnHelp, ?
 
     Gui Add, GroupBox, x8 y32 w324 h212, Auto-Click
-    Gui Add, CheckBox, x20 y52 w120 h20 vCBToggleAutoClick gEventResetHotkeyBindings, Enable Auto-Click
+    Gui Add, CheckBox, x20 y52 w120 h20 vCBToggleAutoClick gEventUserChangedGuiControl, Enable Auto-Click
     Gui Add, Text, x20 y74 w120 h20 +0x200, Toggle Enability
     Gui Add, Hotkey, x142 y74 w84 h20 vHKToggleAutoClick
     Gui Add, Text, x20 y96 w120 h20 +0x200, Interval
@@ -172,21 +200,21 @@ CreateGuiControls()
     Gui Add, Text, x240 y118 w48 h20 +0x200 vTxtRPM, {RPM}
     Gui Add, Text, x288 y118 w48 h20 +0x200, RPM
     Gui Add, Text, x20 y142 w120 h20 +0x200, Mode
-    Gui Add, Radio, x142 y142 w120 h20 vRadioAutoClickPressMode, Press to Auto-Click
-    Gui Add, Radio, x142 y160 w120 h20 vRadioAutoClickRepeatMode, On/Off Repeat
-    Gui Add, CheckBox, x20 y188 w120 h20 vCBToggleAutoClickModeByHotkey gEventResetHotkeyBindings, Toggle Mode by
+    Gui Add, Radio, x142 y142 w120 h20 vRadioAutoClickPressMode gEventUserChangedGuiControl, Press to Auto-Click
+    Gui Add, Radio, x142 y160 w120 h20 vRadioAutoClickRepeatMode gEventUserChangedGuiControl, On/Off Repeat
+    Gui Add, CheckBox, x20 y188 w120 h20 vCBToggleAutoClickModeByHotkey gEventUserChangedGuiControl, Toggle Mode by
     Gui Add, Hotkey, x142 y188 w84 h20 vHKRotateAutoClickMode
     Gui Add, CheckBox, x20 y210 w120 h20 vCBUseAlterClickKey, Use Alternative Key
     Gui Add, Hotkey, x142 y210 w84 h20 vHKAlterClickKey
 
     Gui Add, GroupBox, x336 y32 w200 h76, Auto-Open Cache
-    Gui Add, CheckBox, x352 y52 w84 h20 vCBRunOpenInventoryCacheMacro gEventResetHotkeyBindings, Inventory
+    Gui Add, CheckBox, x352 y52 w84 h20 vCBRunOpenInventoryCacheMacro gEventUserChangedGuiControl, Inventory
     Gui Add, Hotkey, x440 y52 w24 w84 vHKRunOpenInventoryCacheMacro
-    Gui Add, CheckBox, x352 y74 w84 h20 vCBRunOpenApparelCacheMacro gEventResetHotkeyBindings, Apparel
+    Gui Add, CheckBox, x352 y74 w84 h20 vCBRunOpenApparelCacheMacro gEventUserChangedGuiControl, Apparel
     Gui Add, Hotkey, x440 y74 w24 w84 vHKRunOpenApparelCacheMacro
 
     Gui Add, GroupBox, x336 y112 w200 h54, Other Macros
-    Gui Add, CheckBox, x352 y132 w84 h20 vCBRunSummitEvMacro gEventResetHotkeyBindings, Summit Ev.
+    Gui Add, CheckBox, x352 y132 w84 h20 vCBRunSummitEvMacro gEventUserChangedGuiControl, Summit Ev.
     Gui Add, Hotkey, x440 y132 w24 w84 vHKRunSummitEvMacro
 
     Gui Add, CheckBox, x338 y192 w120 h20 vCBCloseOnGameExit, Close on game exit
@@ -232,10 +260,28 @@ UpdateGuiControls()
     If IsEditing()
     {
         GuiControl,, BtnEdit, Done
+
+        GuiControl, Enabled, HKToggleActivation
+        GuiControl, Enabled, HKToggleAutoClick
+        GuiControl, Enabled, HKRotateAutoClickMode
+        GuiControl, Enabled, HKAlterClickKey
+        GuiControl, Enabled, HKRunOpenInventoryCacheMacro
+        GuiControl, Enabled, HKRunOpenApparelCacheMacro
+        GuiControl, Enabled, HKRunSummitEvMacro
+        GuiControl, Enabled, EBInterval
     }
     Else
     {
         GuiControl,, BtnEdit, Edit
+
+        GuiControl, Disabled, HKToggleActivation
+        GuiControl, Disabled, HKToggleAutoClick
+        GuiControl, Disabled, HKRotateAutoClickMode
+        GuiControl, Disabled, HKAlterClickKey
+        GuiControl, Disabled, HKRunOpenInventoryCacheMacro
+        GuiControl, Disabled, HKRunOpenApparelCacheMacro
+        GuiControl, Disabled, HKRunSummitEvMacro
+        GuiControl, Disabled, EBInterval
     }
 
     ; @WIP
@@ -271,8 +317,22 @@ IsEditing()
 
 ApplySettings()
 {
+    FinishAutoClick()
+
     GuiControlGet, Interval,, EBInterval
     SetAutoClickInterval(Interval)
+
+    GuiControlGet, bPressMode,, RadioAutoClickPressMode
+    GuiControlGet, bRepeatMode,, RadioAutoClickRepeatMode
+    If bPressMode
+    {
+        AutoClickMode := AutoClickModeNamePress
+    }
+    Else If bRepeatMode
+    {
+        AutoClickMode := AutoClickModeNameRepeat
+    }
+    SetAutoClickMode(AutoClickMode)
 
     ResetHotkeyBindings()
 }
@@ -321,6 +381,7 @@ RunDetectGameProcess()
             Else
             {
                 ; OnGameProcessFocusLost()
+                FinishAutoClick()
             }
             ResetHotkeyBindings()
         }
@@ -338,6 +399,8 @@ OnGameProcessDetected()
 
 OnGameProcessLost()
 {
+    FinishAutoClick()
+
     GuiControlGet, bCloseOnGameExit,, CBCloseOnGameExit
     If IsGameProcessDetectedOnce() && bCloseOnGameExit
     {
@@ -490,4 +553,88 @@ OnAutoClickIntervalChanged()
     ClickPerSecStr := Format("{1:0.2f}", ClickPerSec)
     GuiControl,, TxtClickPerSec, %ClickPerSecStr%
     GuiControl,, TxtRPM, %RPMStr%
+}
+
+;===============================================================
+
+SetAutoClickMode(AutoClickMode)
+{
+    FinishAutoClick()
+
+    If CurrentAutoClickMode != AutoClickMode
+    {
+        CurrentAutoClickMode := AutoClickMode
+        ; OnAutoClickModeChanged()
+    }
+}
+
+;===============================================================
+
+Timer_AutoClick:
+RunClick()
+Return
+
+IsAutoClickEnabled()
+{
+    GuiControlGet, bEnabled,, CBToggleAutoClick
+    Return bEnabled
+}
+
+IsAutoClicking()
+{
+    Return bAutoClicking
+}
+
+StartAutoClick()
+{
+    bAutoClicking := True
+    SetTimer, Timer_AutoClick, %AutoClickInterval%
+    RunClick()
+}
+
+FinishAutoClick()
+{
+    bAutoClicking := False
+    SetTimer, Timer_AutoClick, Off
+}
+
+OnClick()
+{
+    If IsGameProcessFocused() && IsActivated() && IsAutoClickEnabled()
+    {
+        If (CurrentAutoClickMode = AutoClickModeNamePress)
+        {
+            StartAutoClick()
+            Return
+        }
+        Else If (CurrentAutoClickMode = AutoClickModeNameRepeat)
+        {
+            If (!IsAutoClicking())
+            {
+                StartAutoClick()
+                Return
+            }
+        }
+    }
+    FinishAutoClick()
+}
+
+RunClick()
+{
+    If IsGameProcessFocused() && IsActivated() && IsAutoClickEnabled()
+    {
+        GuiControlGet, bAlterKeyAllowed,, CBUseAlterClickKey
+        bKeyDown
+            := GetKeyState("LButton", "P")
+            || (bAlterKeyAllowed && GetKeyState(HKAlterClickKey, "P"))
+        bClick
+            := CurrentAutoClickMode = AutoClickModeNameRepeat
+            || (CurrentAutoClickMode = AutoClickModeNamePress && bKeyDown)
+        If (bClick)
+        {
+            Click
+            Return
+        }
+    }`
+    FinishAutoClick()
 }
