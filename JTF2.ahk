@@ -44,6 +44,7 @@ Global bMacroPressedF := False
 Global bMacroPressedX := False
 Global bMacroPressedQ := False
 Global bMacroPressedE := False
+Global bCancelSummitMatchmaking := False
 
 ; Entry
 AppMain()
@@ -211,8 +212,8 @@ Return
 HKRunSummitEvMacro:
 If !IsEditing()
 {
-    ; @WIP
-    MsgBox, RunMacro Occured
+    RunSummitEvMacro(bCancelSummitMatchmaking)
+    bCancelSummitMatchmaking := !bCancelSummitMatchmaking
 }
 Return
 
@@ -260,7 +261,7 @@ CreateGuiControls()
     Gui Add, Hotkey, x440 y74 w24 w84 vHKRunOpenApparelCacheMacro
 
     Gui Add, GroupBox, x336 y112 w200 h54, Summit
-    Gui Add, CheckBox, x352 y132 w84 h20 vCBRunSummitEvMacro gEventUserChangedGuiControl, Summit Ev.
+    Gui Add, CheckBox, x352 y132 w84 h20 vCBRunSummitEvMacro gEventUserChangedGuiControl, Matchmaking
     Gui Add, Hotkey, x440 y132 w24 w84 vHKRunSummitEvMacro
 
     Gui Add, CheckBox, x338 y192 w120 h20 vCBCloseOnGameExit, Close on game exit
@@ -988,3 +989,71 @@ If IsOpenApparelCacheMacroRunning()
     SetTimer, MacroStep_OpenApparelCache_0, 150
 }
 Return
+
+;===============================================================
+
+RunSummitEvMacro(bCancel)
+{
+	Send, {M Down}
+	Sleep, 54
+	Send, {M Up}
+	Sleep, 1500
+	Send, {E Down}
+	Sleep, 68
+	Send, {E UP}
+	Sleep, 50
+	Send, {E Down}
+	Sleep, 50
+	Send, {E Up}
+	Sleep, 50
+	Send, {S Down}
+	Sleep, 50
+	Send, {S up}
+	Sleep, 50
+	Send, {S Down}
+	Sleep, 50
+	Send, {S Up}
+	Sleep, 50
+	Send, {D Down}
+	Sleep, 50
+	Send, {D Up}
+	Sleep, 50
+	Send, {D Down}
+	Sleep, 50
+	Send, {D up}
+	Sleep, 50
+	Send, {Space Down}
+	Sleep, 50
+	Send, {Space Up}
+	Sleep, 50
+    If !bCancel
+    {
+        Send, {S Down}
+        Sleep, 50
+        Send, {S Up}
+        Sleep, 50
+        Send, {S Down}
+        Sleep, 50
+        Send, {S up}
+        Sleep, 50
+        Send, {S Down}
+        Sleep, 50
+        Send, {S Up}
+        Sleep, 50
+        Send, {S Down}
+        Sleep, 50
+        Send, {S Up}
+        Sleep, 50
+        Send, {Space Down}
+        Sleep, 50
+        Send, {Space up}
+        Sleep, 50
+    }
+    Else
+    {
+	    Send, {M Down}
+	    Sleep, 50
+	    Send, {M Up}
+    	Sleep, 50
+    }
+}
