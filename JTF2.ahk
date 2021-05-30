@@ -27,6 +27,7 @@ Global IntervalMaximum := 10000
 ; Global constants
 Global AutoClickModeNamePress := "PressMode"
 Global AutoClickModeNameRepeat := "RepeatMode"
+Global OpenInvCacheMacroName := "OpenInvCacheMacro"
 Global OpenApparelCacheMacroName := "OpenApparelCacheMacro"
 
 ; Global variables
@@ -37,7 +38,9 @@ Global bEditing := False
 Global AutoClickInterval := IntervalMinimum
 Global CurrentAutoClickMode
 Global bAutoClicking := False
+Global bRunningOpenInvCacheMacro := False
 Global bRunningOpenApparelCacheMacro := False
+Global bMacroPressedF := False
 Global bMacroPressedX := False
 Global bMacroPressedQ := False
 Global bMacroPressedE := False
@@ -60,7 +63,6 @@ AppMain()
     Menu, Tray, Icon, %AppIconPath%, 1, 1
 
     CreateGuiControls()
-
     OnGameProcessLost()
     DetectGameProcess()
 }
@@ -181,8 +183,14 @@ Return
 HKRunOpenInvCacheMacro:
 If !IsEditing()
 {
-    ; @WIP
-    MsgBox, RunMacro Occured
+    If !IsMacroRunning()
+    {
+        RunOpenInvCacheMacro()
+    }
+    Else If IsOpenInvCacheMacroRunning()
+    {
+        AbortOpenInvCacheMacro()
+    }
 }
 Return
 
@@ -251,7 +259,7 @@ CreateGuiControls()
     Gui Add, CheckBox, x352 y74 w84 h20 vCBRunOpenApparelCacheMacro gEventUserChangedGuiControl, Apparel
     Gui Add, Hotkey, x440 y74 w24 w84 vHKRunOpenApparelCacheMacro
 
-    Gui Add, GroupBox, x336 y112 w200 h54, Other Macros
+    Gui Add, GroupBox, x336 y112 w200 h54, Summit
     Gui Add, CheckBox, x352 y132 w84 h20 vCBRunSummitEvMacro gEventUserChangedGuiControl, Summit Ev.
     Gui Add, Hotkey, x440 y132 w24 w84 vHKRunSummitEvMacro
 
@@ -770,13 +778,116 @@ RunClick()
 
 IsMacroRunning()
 {
-    Return IsOpenApparelCacheMacroRunning()
+    Return IsOpenInvCacheMacroRunning()
+        || IsOpenApparelCacheMacroRunning()
 }
 
 AbortRunningMacro()
 {
+    AbortOpenInvCacheMacro()
     AbortOpenApparelCacheMacro()
 }
+
+;===============================================================
+
+IsOpenInvCacheMacroRunning()
+{
+    Return bRunningOpenInvCacheMacro
+}
+
+RunOpenInvCacheMacro()
+{
+    bRunningOpenInvCacheMacro := True
+    SetTimer, MacroStep_OpenInvCache_0, 25
+}
+
+AbortOpenInvCacheMacro()
+{
+    SetTimer, MacroStep_OpenInvCache_0, Delete
+    SetTimer, MacroStep_OpenInvCache_1, Delete
+    SetTimer, MacroStep_OpenInvCache_2, Delete
+    SetTimer, MacroStep_OpenInvCache_3, Delete
+    SetTimer, MacroStep_OpenInvCache_4, Delete
+    SetTimer, MacroStep_OpenInvCache_5, Delete
+    bRunningOpenInvCacheMacro := False
+
+    If bMacroPressedF
+    {
+        Send, {F Up}
+        bMacroPressedF := False
+    }
+    If bMacroPressedQ
+    {
+        Send, {Q Up}
+        bMacroPressedQ := False
+    }
+    If bMacroPressedE
+    {
+        Send, {E Up}
+        bMacroPressedE := False
+    }
+}
+
+MacroStep_OpenInvCache_0:
+SetTimer, MacroStep_OpenInvCache_0, Delete
+If IsOpenInvCacheMacroRunning()
+{
+    Send, {Click}
+    SetTimer, MacroStep_OpenInvCache_1, 200
+}
+Return
+
+MacroStep_OpenInvCache_1:
+SetTimer, MacroStep_OpenInvCache_1, Delete
+If IsOpenInvCacheMacroRunning()
+{
+    Send, {F Down}
+    bMacroPressedF := True
+    SetTimer, MacroStep_OpenInvCache_2, 1100
+}
+Return
+
+MacroStep_OpenInvCache_2:
+SetTimer, MacroStep_OpenInvCache_2, Delete
+If IsOpenInvCacheMacroRunning()
+{
+    Send, {Q Down}
+    bMacroPressedQ := True
+    SetTimer, MacroStep_OpenInvCache_3, 50
+}
+Return
+
+MacroStep_OpenInvCache_3:
+SetTimer, MacroStep_OpenInvCache_3, Delete
+If IsOpenInvCacheMacroRunning()
+{
+    Send, {Q Up}
+    bMacroPressedQ := False
+    SetTimer, MacroStep_OpenInvCache_4, 200
+}
+Return
+
+MacroStep_OpenInvCache_4:
+SetTimer, MacroStep_OpenInvCache_4, Delete
+If IsOpenInvCacheMacroRunning()
+{
+    Send, {E Down}
+    bMacroPressedE := True
+    SetTimer, MacroStep_OpenInvCache_5, 80
+}
+Return
+
+MacroStep_OpenInvCache_5:
+SetTimer, MacroStep_OpenInvCache_5, Delete
+If IsOpenInvCacheMacroRunning()
+{
+    Send, {F Up}
+    bMacroPressedF := False
+    Send, {E Up}
+    bMacroPressedE := False
+    SetTimer, MacroStep_OpenInvCache_0, 600
+}
+Return
 
 ;===============================================================
 
