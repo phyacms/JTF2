@@ -261,6 +261,8 @@ SetupGuiControls(bUseDefault)
 
 UpdateGuiControls()
 {
+    GuiControl,, EBInterval, %AutoClickInterval%
+
     If IsEditing()
     {
         GuiControl,, BtnEdit, Done
@@ -346,13 +348,11 @@ SaveSettings()
     FileDelete, %AppConfigPath%
     Gui, Submit, NoHide
 
-    IniWrite, %HKToggleActivation%, %AppConfigPath%, Hotkeys, ToggleActivation
-    IniWrite, %HKToggleAutoClick%, %AppConfigPath%, Hotkeys, ToggleAutoClickBy
-    IniWrite, %HKRotateAutoClickMode%, %AppConfigPath%, Hotkeys, ToggleModeBy
-    IniWrite, %HKAlterClickKey%, %AppConfigPath%, Hotkeys, AlternativeClickKey
-    IniWrite, %HKRunOpenInventoryCacheMacro%, %AppConfigPath%, Hotkeys, RunOpenInventoryCacheMacro
-    IniWrite, %HKRunOpenApparelCacheMacro%, %AppConfigPath%, Hotkeys, RunOpenApparelCacheMacro
-    IniWrite, %HKRunSummitEvMacro%, %AppConfigPath%, Hotkeys, RunSummitElevatorMacro
+    If IsCloseOnGameExitEnabled()
+        IniWrite, 1, %AppConfigPath%, Preferences, CloseOnGameExit
+
+    IniWrite, %AutoClickInterval%, %AppConfigPath%, Configs, ClickInterval
+    IniWrite, %CurrentAutoClickMode%, %AppConfigPath%, Configs, AutoClickMode
 
     If IsAutoClickModeToggleEnabled()
         IniWrite, 1, %AppConfigPath%, Configs, ToggleAutoClickModeByHotkey
@@ -365,10 +365,40 @@ SaveSettings()
         IniWrite, 1, %AppConfigPath%, Configs, EnableOpenApparelCache
     If IsRunSummitElevatorMacroEnabled()
         IniWrite, 1, %AppConfigPath%, Configs, EnableSummitEvMacro
+
+    IniWrite, %HKToggleActivation%, %AppConfigPath%, Hotkeys, ToggleActivation
+    IniWrite, %HKToggleAutoClick%, %AppConfigPath%, Hotkeys, ToggleAutoClickBy
+    IniWrite, %HKRotateAutoClickMode%, %AppConfigPath%, Hotkeys, ToggleModeBy
+    IniWrite, %HKAlterClickKey%, %AppConfigPath%, Hotkeys, AlternativeClickKey
+    IniWrite, %HKRunOpenInventoryCacheMacro%, %AppConfigPath%, Hotkeys, RunOpenInventoryCacheMacro
+    IniWrite, %HKRunOpenApparelCacheMacro%, %AppConfigPath%, Hotkeys, RunOpenApparelCacheMacro
+    IniWrite, %HKRunSummitEvMacro%, %AppConfigPath%, Hotkeys, RunSummitElevatorMacro
 }
 
 LoadSettings()
 {
+    IniRead, bChk, %AppConfigPath%, Preferences, CloseOnGameExit, False
+    GuiControl,, CBCloseOnGameExit, % bChk = True
+
+    IniRead, Interval, %AppConfigPath%, Configs, ClickInterval, %IntervalMinimum%
+	GuiControl,, EBInterval, %Interval%
+    IniRead, AutoClickModeName, %AppConfigPath%, Configs, AutoClickMode, AutoClickModeNamePress
+	GuiControl,, RadioAutoClickPressMode, 1
+    If AutoClickModeName = %AutoClickModeNameRepeat%
+		GuiControl,, RadioAutoClickRepeatMode, 1
+
+    IniRead, bChk, %AppConfigPath%, Configs, ToggleAutoClickModeByHotkey, False
+    GuiControl,, CBToggleAutoClickModeByHotkey, % bChk = True
+    IniRead, bChk, %AppConfigPath%, Configs, UseAlternativeClickKey, False
+    GuiControl,, CBUseAlterClickKey, % bChk = True
+
+    IniRead, bChk, %AppConfigPath%, Configs, EnableOpenInventoryCache, True
+    GuiControl,, CBRunOpenInventoryCacheMacro, % bChk = True
+    IniRead, bChk, %AppConfigPath%, Configs, EnableOpenApparelCache, True
+    GuiControl,, CBRunOpenApparelCacheMacro, % bChk = True
+    IniRead, bChk, %AppConfigPath%, Configs, EnableSummitEvMacro, False
+    GuiControl,, CBRunSummitEvMacro, % bChk = True
+
     IniRead, LoadedHotkey, %AppConfigPath%, Hotkeys, ToggleActivation, ``
     GuiControl,, HKToggleActivation, %LoadedHotkey%
     IniRead, LoadedHotkey, %AppConfigPath%, Hotkeys, ToggleAutoClickBy, XButton1
@@ -383,18 +413,6 @@ LoadSettings()
     GuiControl,, HKRunOpenApparelCacheMacro, %LoadedHotkey%
     IniRead, LoadedHotkey, %AppConfigPath%, Hotkeys, RunSummitElevatorMacro, F11
     GuiControl,, HKRunSummitEvMacro, %LoadedHotkey%
-
-    IniRead, bChk, %AppConfigPath%, Configs, ToggleAutoClickModeByHotkey, False
-    GuiControl,, CBToggleAutoClickModeByHotkey, % bChk = True
-    IniRead, bChk, %AppConfigPath%, Configs, UseAlternativeClickKey, False
-    GuiControl,, CBUseAlterClickKey, % bChk = True
-
-    IniRead, bChk, %AppConfigPath%, Configs, EnableOpenInventoryCache, True
-    GuiControl,, CBRunOpenInventoryCacheMacro, % bChk = True
-    IniRead, bChk, %AppConfigPath%, Configs, EnableOpenApparelCache, True
-    GuiControl,, CBRunOpenApparelCacheMacro, % bChk = True
-    IniRead, bChk, %AppConfigPath%, Configs, EnableSummitEvMacro, False
-    GuiControl,, CBRunSummitEvMacro, % bChk = True
 }
 
 ;===============================================================
@@ -461,8 +479,7 @@ OnGameProcessLost()
 {
     FinishAutoClick()
 
-    GuiControlGet, bCloseOnGameExit,, CBCloseOnGameExit
-    If IsGameProcessDetectedOnce() && bCloseOnGameExit
+    If IsGameProcessDetectedOnce() && IsCloseOnGameExitEnabled()
     {
         AppExit()
         Return
@@ -494,6 +511,12 @@ IsActivated()
 {
     GuiControlGet, bActivated,, CBActivate
     Return bActivated
+}
+
+IsCloseOnGameExitEnabled()
+{
+    GuiControlGet, bEnabled,, CBCloseOnGameExit
+    return bEnabled
 }
 
 ;===============================================================
@@ -593,13 +616,18 @@ UnbindAllHotkeyBindings()
 
 ;===============================================================
 
-SetAutoClickInterval(Interval)
+ClampInterval(Interval)
 {
     If Interval < %IntervalMinimum%
         Interval := IntervalMinimum
     If Interval > %IntervalMaximum%
         Interval := IntervalMaximum
+    Return Interval
+}
 
+SetAutoClickInterval(Interval)
+{
+    Interval := ClampInterval(Interval)
     If AutoClickInterval != Interval
     {
         AutoClickInterval := Interval
