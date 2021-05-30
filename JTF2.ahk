@@ -233,27 +233,29 @@ CreateGuiControls()
 
 SetupGuiControls(bUseDefault)
 {
-    GuiControl,, HKToggleActivation, ``
-    GuiControl,, HKToggleAutoClick, XButton1
-    GuiControl,, HKRotateAutoClickMode, !C
-    GuiControl,, HKAlterClickKey, C
-    GuiControl,, HKRunOpenInventoryCacheMacro, F9
-    GuiControl,, HKRunOpenApparelCacheMacro, F10
-    GuiControl,, HKRunSummitEvMacro, F11
-
-    GuiControl,, EBInterval, %IntervalMinimum%
-    GuiControl,, RadioAutoClickPressMode, 1
-    GuiControl,, CBToggleAutoClick, 0
-    GuiControl,, CBToggleAutoClickModeByHotkey, 0
-    GuiControl,, CBUseAlterClickKey, 0
-    GuiControl,, CBRunOpenInventoryCacheMacro, 1
-    GuiControl,, CBRunOpenApparelCacheMacro, 1
-    GuiControl,, CBRunSummitEvMacro, 0
-    GuiControl,, CBCloseOnGameExit, 1
-
     If !bUseDefault
     {
         LoadSettings()
+    }
+    Else
+    {
+		GuiControl,, HKToggleActivation, ``
+		GuiControl,, HKToggleAutoClick, XButton1
+		GuiControl,, HKRotateAutoClickMode, !C
+		GuiControl,, HKAlterClickKey, C
+		GuiControl,, HKRunOpenInventoryCacheMacro, F9
+		GuiControl,, HKRunOpenApparelCacheMacro, F10
+		GuiControl,, HKRunSummitEvMacro, F11
+
+		GuiControl,, EBInterval, %IntervalMinimum%
+		GuiControl,, RadioAutoClickPressMode, 1
+		GuiControl,, CBToggleAutoClick, 0
+		GuiControl,, CBToggleAutoClickModeByHotkey, 0
+		GuiControl,, CBUseAlterClickKey, 0
+		GuiControl,, CBRunOpenInventoryCacheMacro, 1
+		GuiControl,, CBRunOpenApparelCacheMacro, 1
+		GuiControl,, CBRunSummitEvMacro, 0
+		GuiControl,, CBCloseOnGameExit, 1
     }
 }
 
