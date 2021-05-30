@@ -128,43 +128,58 @@ Return
 ; Hotkey events
 
 HKToggleActivation:
-GuiControlGet, bChk,, CBActivate
-If bChk
-    GuiControl,, CBActivate, 0
-Else
-    GuiControl,, CBActivate, 1
-ApplySettings()
+If (!IsEditing())
+{
+    GuiControlGet, bChk,, CBActivate
+    If bChk
+        GuiControl,, CBActivate, 0
+    Else
+        GuiControl,, CBActivate, 1
+    ApplySettings()
+}
 Return
 
 HKToggleAutoClick:
-GuiControlGet, bChk,, CBToggleAutoClick
-If bChk
-    GuiControl,, CBToggleAutoClick, 0
-Else
-    GuiControl,, CBToggleAutoClick, 1
-ApplySettings()
+If (!IsEditing())
+{
+    GuiControlGet, bChk,, CBToggleAutoClick
+    If bChk
+        GuiControl,, CBToggleAutoClick, 0
+    Else
+        GuiControl,, CBToggleAutoClick, 1
+    ApplySettings()
+}
 Return
 
 HKRotateAutoClickMode:
-GuiControlGet, bPressMode,, RadioAutoClickPressMode
-GuiControlGet, bRepeatMode,, RadioAutoClickRepeatMode
-If bPressMode
-    GuiControl,, RadioAutoClickRepeatMode, 1
-Else If bRepeatMode
-    GuiControl,, RadioAutoClickPressMode, 1
-ApplySettings()
+If (!IsEditing())
+{
+    GuiControlGet, bPressMode,, RadioAutoClickPressMode
+    GuiControlGet, bRepeatMode,, RadioAutoClickRepeatMode
+    If bPressMode
+        GuiControl,, RadioAutoClickRepeatMode, 1
+    Else If bRepeatMode
+        GuiControl,, RadioAutoClickPressMode, 1
+    ApplySettings()
+}
 Return
 
 HKAlterClickKey:
-If (IsAlternativeClickKeyAllowed())
-    OnClick()
+If (!IsEditing())
+{
+    If (IsAlternativeClickKeyAllowed())
+        OnClick()
+}
 Return
 
 HKRunOpenInventoryCacheMacro:
 HKRunOpenApparelCacheMacro:
 HKRunSummitEvMacro:
-; @WIP
-MsgBox, RunMacro Occured
+If (!IsEditing())
+{
+    ; @WIP
+    MsgBox, RunMacro Occured
+}
 Return
 
 ; Key events
