@@ -600,20 +600,15 @@ FinishAutoClick()
 
 OnClick()
 {
-    If IsGameProcessFocused() && IsActivated() && IsAutoClickEnabled()
+    If IsGameProcessFocused() && !IsEditing() && IsActivated() && IsAutoClickEnabled()
     {
-        If (CurrentAutoClickMode = AutoClickModeNamePress)
+        bStart
+            := CurrentAutoClickMode = AutoClickModeNamePress
+            || (CurrentAutoClickMode = AutoClickModeNameRepeat && !IsAutoClicking)
+        If (bStart)
         {
             StartAutoClick()
             Return
-        }
-        Else If (CurrentAutoClickMode = AutoClickModeNameRepeat)
-        {
-            If (!IsAutoClicking())
-            {
-                StartAutoClick()
-                Return
-            }
         }
     }
     FinishAutoClick()
