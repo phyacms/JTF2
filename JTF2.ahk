@@ -369,17 +369,17 @@ LoadSettings()
 {
     IniRead, LoadedHotkey, %AppConfigPath%, Hotkeys, ToggleActivation, ``
     GuiControl,, HKToggleActivation, %LoadedHotkey%
-    IniRead, LoadedHotkey, %AppConfigPath%, Hotkeys, ToggleAutoClickBy, ``
+    IniRead, LoadedHotkey, %AppConfigPath%, Hotkeys, ToggleAutoClickBy, XButton1
     GuiControl,, HKToggleAutoClick, %LoadedHotkey%
-    IniRead, LoadedHotkey, %AppConfigPath%, Hotkeys, ToggleModeBy, ``
+    IniRead, LoadedHotkey, %AppConfigPath%, Hotkeys, ToggleModeBy, !C
     GuiControl,, HKRotateAutoClickMode, %LoadedHotkey%
-    IniRead, LoadedHotkey, %AppConfigPath%, Hotkeys, AlternativeClickKey, ``
+    IniRead, LoadedHotkey, %AppConfigPath%, Hotkeys, AlternativeClickKey, C
     GuiControl,, HKAlterClickKey, %LoadedHotkey%
-    IniRead, LoadedHotkey, %AppConfigPath%, Hotkeys, RunOpenInventoryCacheMacro, ``
+    IniRead, LoadedHotkey, %AppConfigPath%, Hotkeys, RunOpenInventoryCacheMacro, F9
     GuiControl,, HKRunOpenInventoryCacheMacro, %LoadedHotkey%
-    IniRead, LoadedHotkey, %AppConfigPath%, Hotkeys, RunOpenApparelCacheMacro, ``
+    IniRead, LoadedHotkey, %AppConfigPath%, Hotkeys, RunOpenApparelCacheMacro, F10
     GuiControl,, HKRunOpenApparelCacheMacro, %LoadedHotkey%
-    IniRead, LoadedHotkey, %AppConfigPath%, Hotkeys, RunSummitElevatorMacro, ``
+    IniRead, LoadedHotkey, %AppConfigPath%, Hotkeys, RunSummitElevatorMacro, F11
     GuiControl,, HKRunSummitEvMacro, %LoadedHotkey%
 
     IniRead, bChk, %AppConfigPath%, Configs, ToggleAutoClickModeByHotkey, False
