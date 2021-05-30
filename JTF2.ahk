@@ -27,6 +27,7 @@ Global IntervalMaximum := 10000
 ; Global constants
 Global AutoClickModeNamePress := "PressMode"
 Global AutoClickModeNameRepeat := "RepeatMode"
+Global OpenApparelCacheMacroName := "OpenApparelCacheMacro"
 
 ; Global variables
 Global bGameProcessDetectedOnce := False
@@ -36,6 +37,10 @@ Global bEditing := False
 Global AutoClickInterval := IntervalMinimum
 Global CurrentAutoClickMode
 Global bAutoClicking := False
+Global bRunningOpenApparelCacheMacro := False
+Global bMacroPressedX := False
+Global bMacroPressedQ := False
+Global bMacroPressedE := False
 
 ; Entry
 AppMain()
@@ -62,8 +67,9 @@ AppMain()
 
 AppExit()
 {
-	SetTimer, Timer_DetectGameProcess, Off
+	SetTimer, Timer_DetectGameProcess, Delete
     FinishAutoClick()
+    AbortRunningMacro()
     SaveSettings()
     ExitApp
 }
@@ -76,7 +82,7 @@ Global HKToggleActivation
 Global HKToggleAutoClick
 Global HKRotateAutoClickMode
 Global HKAlterClickKey
-Global HKRunOpenInventoryCacheMacro
+Global HKRunOpenInvCacheMacro
 Global HKRunOpenApparelCacheMacro
 Global HKRunSummitEvMacro
 
@@ -92,7 +98,7 @@ Global CBActivate
 Global CBToggleAutoClick
 Global CBToggleAutoClickModeByHotkey
 Global CBUseAlterClickKey
-Global CBRunOpenInventoryCacheMacro
+Global CBRunOpenInvCacheMacro
 Global CBRunOpenApparelCacheMacro
 Global CBRunSummitEvMacro
 Global CBCloseOnGameExit
@@ -172,10 +178,30 @@ If (!IsEditing())
 }
 Return
 
-HKRunOpenInventoryCacheMacro:
+HKRunOpenInvCacheMacro:
+If !IsEditing()
+{
+    ; @WIP
+    MsgBox, RunMacro Occured
+}
+Return
+
 HKRunOpenApparelCacheMacro:
+If !IsEditing()
+{
+    If !IsMacroRunning()
+    {
+        RunOpenApparelCacheMacro()
+    }
+    Else If IsOpenApparelCacheMacroRunning()
+    {
+        AbortOpenApparelCacheMacro()
+    }
+}
+Return
+
 HKRunSummitEvMacro:
-If (!IsEditing())
+If !IsEditing()
 {
     ; @WIP
     MsgBox, RunMacro Occured
@@ -220,8 +246,8 @@ CreateGuiControls()
     Gui Add, Hotkey, x142 y210 w84 h20 vHKAlterClickKey
 
     Gui Add, GroupBox, x336 y32 w200 h76, Auto-Open Cache
-    Gui Add, CheckBox, x352 y52 w84 h20 vCBRunOpenInventoryCacheMacro gEventUserChangedGuiControl, Inventory
-    Gui Add, Hotkey, x440 y52 w24 w84 vHKRunOpenInventoryCacheMacro
+    Gui Add, CheckBox, x352 y52 w84 h20 vCBRunOpenInvCacheMacro gEventUserChangedGuiControl, Inventory
+    Gui Add, Hotkey, x440 y52 w24 w84 vHKRunOpenInvCacheMacro
     Gui Add, CheckBox, x352 y74 w84 h20 vCBRunOpenApparelCacheMacro gEventUserChangedGuiControl, Apparel
     Gui Add, Hotkey, x440 y74 w24 w84 vHKRunOpenApparelCacheMacro
 
@@ -258,7 +284,7 @@ SetupGuiControls(bUseDefault)
 		GuiControl,, HKToggleAutoClick, XButton1
 		GuiControl,, HKRotateAutoClickMode, !C
 		GuiControl,, HKAlterClickKey, C
-		GuiControl,, HKRunOpenInventoryCacheMacro, F9
+		GuiControl,, HKRunOpenInvCacheMacro, F9
 		GuiControl,, HKRunOpenApparelCacheMacro, F10
 		GuiControl,, HKRunSummitEvMacro, F11
 
@@ -267,7 +293,7 @@ SetupGuiControls(bUseDefault)
 		GuiControl,, CBToggleAutoClick, 0
 		GuiControl,, CBToggleAutoClickModeByHotkey, 0
 		GuiControl,, CBUseAlterClickKey, 0
-		GuiControl,, CBRunOpenInventoryCacheMacro, 1
+		GuiControl,, CBRunOpenInvCacheMacro, 1
 		GuiControl,, CBRunOpenApparelCacheMacro, 1
 		GuiControl,, CBRunSummitEvMacro, 0
 		GuiControl,, CBCloseOnGameExit, 1
@@ -286,7 +312,7 @@ UpdateGuiControls()
         GuiControl, Enabled, HKToggleAutoClick
         GuiControl, Enabled, HKRotateAutoClickMode
         GuiControl, Enabled, HKAlterClickKey
-        GuiControl, Enabled, HKRunOpenInventoryCacheMacro
+        GuiControl, Enabled, HKRunOpenInvCacheMacro
         GuiControl, Enabled, HKRunOpenApparelCacheMacro
         GuiControl, Enabled, HKRunSummitEvMacro
         GuiControl, Enabled, EBInterval
@@ -299,7 +325,7 @@ UpdateGuiControls()
         GuiControl, Disabled, HKToggleAutoClick
         GuiControl, Disabled, HKRotateAutoClickMode
         GuiControl, Disabled, HKAlterClickKey
-        GuiControl, Disabled, HKRunOpenInventoryCacheMacro
+        GuiControl, Disabled, HKRunOpenInvCacheMacro
         GuiControl, Disabled, HKRunOpenApparelCacheMacro
         GuiControl, Disabled, HKRunSummitEvMacro
         GuiControl, Disabled, EBInterval
@@ -337,6 +363,7 @@ IsEditing()
 ApplySettings()
 {
     FinishAutoClick()
+    AbortRunningMacro()
 
     GuiControlGet, Interval,, EBInterval
     SetAutoClickInterval(Interval)
@@ -374,7 +401,7 @@ SaveSettings()
     If IsAlternativeClickKeyAllowed()
         IniWrite, 1, %AppConfigPath%, Configs, UseAlternativeClickKey
 
-    If IsOpenInventoryCacheMacroEnabled()
+    If IsOpenInvCacheMacroEnabled()
         IniWrite, 1, %AppConfigPath%, Configs, EnableOpenInventoryCache
     If IsOpenApparelCacheMacroEnabled()
         IniWrite, 1, %AppConfigPath%, Configs, EnableOpenApparelCache
@@ -385,7 +412,7 @@ SaveSettings()
     IniWrite, %HKToggleAutoClick%, %AppConfigPath%, Hotkeys, ToggleAutoClickBy
     IniWrite, %HKRotateAutoClickMode%, %AppConfigPath%, Hotkeys, ToggleModeBy
     IniWrite, %HKAlterClickKey%, %AppConfigPath%, Hotkeys, AlternativeClickKey
-    IniWrite, %HKRunOpenInventoryCacheMacro%, %AppConfigPath%, Hotkeys, RunOpenInventoryCacheMacro
+    IniWrite, %HKRunOpenInvCacheMacro%, %AppConfigPath%, Hotkeys, RunOpenInventoryCacheMacro
     IniWrite, %HKRunOpenApparelCacheMacro%, %AppConfigPath%, Hotkeys, RunOpenApparelCacheMacro
     IniWrite, %HKRunSummitEvMacro%, %AppConfigPath%, Hotkeys, RunSummitElevatorMacro
 }
@@ -408,7 +435,7 @@ LoadSettings()
     GuiControl,, CBUseAlterClickKey, % bChk = True
 
     IniRead, bChk, %AppConfigPath%, Configs, EnableOpenInventoryCache, True
-    GuiControl,, CBRunOpenInventoryCacheMacro, % bChk = True
+    GuiControl,, CBRunOpenInvCacheMacro, % bChk = True
     IniRead, bChk, %AppConfigPath%, Configs, EnableOpenApparelCache, True
     GuiControl,, CBRunOpenApparelCacheMacro, % bChk = True
     IniRead, bChk, %AppConfigPath%, Configs, EnableSummitEvMacro, False
@@ -423,7 +450,7 @@ LoadSettings()
     IniRead, LoadedHotkey, %AppConfigPath%, Hotkeys, AlternativeClickKey, C
     GuiControl,, HKAlterClickKey, %LoadedHotkey%
     IniRead, LoadedHotkey, %AppConfigPath%, Hotkeys, RunOpenInventoryCacheMacro, F9
-    GuiControl,, HKRunOpenInventoryCacheMacro, %LoadedHotkey%
+    GuiControl,, HKRunOpenInvCacheMacro, %LoadedHotkey%
     IniRead, LoadedHotkey, %AppConfigPath%, Hotkeys, RunOpenApparelCacheMacro, F10
     GuiControl,, HKRunOpenApparelCacheMacro, %LoadedHotkey%
     IniRead, LoadedHotkey, %AppConfigPath%, Hotkeys, RunSummitElevatorMacro, F11
@@ -475,6 +502,7 @@ RunDetectGameProcess()
             {
                 ; OnGameProcessFocusLost()
                 FinishAutoClick()
+                AbortRunningMacro()
             }
             ResetHotkeyBindings()
         }
@@ -550,9 +578,9 @@ IsAlternativeClickKeyAllowed()
 
 ;===============================================================
 
-IsOpenInventoryCacheMacroEnabled()
+IsOpenInvCacheMacroEnabled()
 {
-    GuiControlGet, bEnabled,, CBRunOpenInventoryCacheMacro
+    GuiControlGet, bEnabled,, CBRunOpenInvCacheMacro
     Return bEnabled
 }
 
@@ -597,9 +625,9 @@ BindHotkeyBindingsConditional()
             If bChk && Not !HKAlterClickKey
                 Hotkey, %HKAlterClickKey%, HKAlterClickKey, On
 
-            GuiControlGet, bChk,, CBRunOpenInventoryCacheMacro
-            If bChk && Not !HKRunOpenInventoryCacheMacro
-                Hotkey, %HKRunOpenInventoryCacheMacro%, HKRunOpenInventoryCacheMacro, On
+            GuiControlGet, bChk,, CBRunOpenInvCacheMacro
+            If bChk && Not !HKRunOpenInvCacheMacro
+                Hotkey, %HKRunOpenInvCacheMacro%, HKRunOpenInvCacheMacro, On
             GuiControlGet, bChk,, CBRunOpenApparelCacheMacro
             If bChk && Not !HKRunOpenApparelCacheMacro
                 Hotkey, %HKRunOpenApparelCacheMacro%, HKRunOpenApparelCacheMacro, On
@@ -621,8 +649,8 @@ UnbindAllHotkeyBindings()
         Hotkey, %HKRotateAutoClickMode%, HKRotateAutoClickMode, Off
     If Not !HKAlterClickKey
         Hotkey, %HKAlterClickKey%, HKAlterClickKey, Off
-    If Not !HKRunOpenInventoryCacheMacro
-        Hotkey, %HKRunOpenInventoryCacheMacro%, HKRunOpenInventoryCacheMacro, Off
+    If Not !HKRunOpenInvCacheMacro
+        Hotkey, %HKRunOpenInvCacheMacro%, HKRunOpenInvCacheMacro, Off
     If Not !HKRunOpenApparelCacheMacro
         Hotkey, %HKRunOpenApparelCacheMacro%, HKRunOpenApparelCacheMacro, Off
     If Not !HKRunSummitEvMacro
@@ -700,7 +728,7 @@ StartAutoClick()
 FinishAutoClick()
 {
     bAutoClicking := False
-    SetTimer, Timer_AutoClick, Off
+    SetTimer, Timer_AutoClick, Delete
 }
 
 OnClick()
@@ -737,3 +765,115 @@ RunClick()
     }
     FinishAutoClick()
 }
+
+;===============================================================
+
+IsMacroRunning()
+{
+    Return IsOpenApparelCacheMacroRunning()
+}
+
+AbortRunningMacro()
+{
+    AbortOpenApparelCacheMacro()
+}
+
+;===============================================================
+
+IsOpenApparelCacheMacroRunning()
+{
+    Return bRunningOpenApparelCacheMacro
+}
+
+RunOpenApparelCacheMacro()
+{
+    bRunningOpenApparelCacheMacro := True
+    SetTimer, MacroStep_OpenApparelCache_0, 25
+}
+
+AbortOpenApparelCacheMacro()
+{
+    SetTimer, MacroStep_OpenApparelCache_0, Delete
+    SetTimer, MacroStep_OpenApparelCache_1, Delete
+    SetTimer, MacroStep_OpenApparelCache_2, Delete
+    SetTimer, MacroStep_OpenApparelCache_3, Delete
+    SetTimer, MacroStep_OpenApparelCache_4, Delete
+    SetTimer, MacroStep_OpenApparelCache_5, Delete
+    bRunningOpenApparelCacheMacro := False
+
+    If bMacroPressedX
+    {
+        Send, {X Up}
+        bMacroPressedX := False
+    }
+    If bMacroPressedQ
+    {
+        Send, {Q Up}
+        bMacroPressedQ := False
+    }
+    If bMacroPressedE
+    {
+        Send, {E Up}
+        bMacroPressedE := False
+    }
+}
+
+MacroStep_OpenApparelCache_0:
+SetTimer, MacroStep_OpenApparelCache_0, Delete
+If IsOpenApparelCacheMacroRunning()
+{
+    Send, {X Down}
+    bMacroPressedX := True
+    SetTimer, MacroStep_OpenApparelCache_1, 3500
+}
+Return
+
+MacroStep_OpenApparelCache_1:
+SetTimer, MacroStep_OpenApparelCache_1, Delete
+If IsOpenApparelCacheMacroRunning()
+{
+    Send, {X Up}
+    bMacroPressedX := False
+    SetTimer, MacroStep_OpenApparelCache_2, 750
+}
+Return
+
+MacroStep_OpenApparelCache_2:
+SetTimer, MacroStep_OpenApparelCache_2, Delete
+If IsOpenApparelCacheMacroRunning()
+{
+    Send, {Q Down}
+    bMacroPressedQ := True
+    SetTimer, MacroStep_OpenApparelCache_3, 150
+}
+Return
+
+MacroStep_OpenApparelCache_3:
+SetTimer, MacroStep_OpenApparelCache_3, Delete
+If IsOpenApparelCacheMacroRunning()
+{
+    Send, {Q Up}
+    bMacroPressedQ := False
+    SetTimer, MacroStep_OpenApparelCache_4, 150
+}
+Return
+
+MacroStep_OpenApparelCache_4:
+SetTimer, MacroStep_OpenApparelCache_4, Delete
+If IsOpenApparelCacheMacroRunning()
+{
+    Send, {E Down}
+    bMacroPressedE := True
+    SetTimer, MacroStep_OpenApparelCache_5, 150
+}
+Return
+
+MacroStep_OpenApparelCache_5:
+SetTimer, MacroStep_OpenApparelCache_5, Delete
+If IsOpenApparelCacheMacroRunning()
+{
+    Send, {E Up}
+    bMacroPressedE := False
+    SetTimer, MacroStep_OpenApparelCache_0, 150
+}
+Return
