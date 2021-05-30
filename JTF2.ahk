@@ -635,6 +635,6 @@ RunClick()
             Click
             Return
         }
-    }`
+    }
     FinishAutoClick()
 }
