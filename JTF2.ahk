@@ -285,8 +285,6 @@ UpdateGuiControls()
         GuiControl, Disabled, HKRunSummitEvMacro
         GuiControl, Disabled, EBInterval
     }
-
-    ; @WIP
 }
 
 ;===============================================================
@@ -545,44 +543,30 @@ BindHotkeyBindingsConditional()
     If IsGameProcessFocused()
     {
         If Not !HKToggleActivation
-        {
             Hotkey, %HKToggleActivation%, HKToggleActivation, On
-        }
 
         If IsActivated()
         {
             If Not !HKToggleAutoClick
-            {
                 Hotkey, %HKToggleAutoClick%, HKToggleAutoClick, On
-            }
 
             GuiControlGet, bChk,, CBToggleAutoClickModeByHotkey
             If bChk && Not !HKRotateAutoClickMode
-            {
                 Hotkey, %HKRotateAutoClickMode%, HKRotateAutoClickMode, On
-            }
             GuiControlGet, bChk,, CBUseAlterClickKey
             If bChk && Not !HKAlterClickKey
-            {
                 Hotkey, %HKAlterClickKey%, HKAlterClickKey, On
-            }
 
             GuiControlGet, bChk,, CBRunOpenInventoryCacheMacro
             If bChk && Not !HKRunOpenInventoryCacheMacro
-            {
                 Hotkey, %HKRunOpenInventoryCacheMacro%, HKRunOpenInventoryCacheMacro, On
-            }
             GuiControlGet, bChk,, CBRunOpenApparelCacheMacro
             If bChk && Not !HKRunOpenApparelCacheMacro
-            {
                 Hotkey, %HKRunOpenApparelCacheMacro%, HKRunOpenApparelCacheMacro, On
-            }
 
             GuiControlGet, bChk,, CBRunSummitEvMacro
             If bChk && Not !HKRunSummitEvMacro
-            {
                 Hotkey, %HKRunSummitEvMacro%, HKRunSummitEvMacro, On
-            }
         }
     }
 }
@@ -590,33 +574,19 @@ BindHotkeyBindingsConditional()
 UnbindAllHotkeyBindings()
 {
     If Not !HKToggleActivation
-    {
         Hotkey, %HKToggleActivation%, HKToggleActivation, Off
-    }
     If Not !HKToggleAutoClick
-    {
         Hotkey, %HKToggleAutoClick%, HKToggleAutoClick, Off
-    }
     If Not !HKRotateAutoClickMode
-    {
         Hotkey, %HKRotateAutoClickMode%, HKRotateAutoClickMode, Off
-    }
     If Not !HKAlterClickKey
-    {
         Hotkey, %HKAlterClickKey%, HKAlterClickKey, Off
-    }
     If Not !HKRunOpenInventoryCacheMacro
-    {
         Hotkey, %HKRunOpenInventoryCacheMacro%, HKRunOpenInventoryCacheMacro, Off
-    }
     If Not !HKRunOpenApparelCacheMacro
-    {
         Hotkey, %HKRunOpenApparelCacheMacro%, HKRunOpenApparelCacheMacro, Off
-    }
     If Not !HKRunSummitEvMacro
-    {
         Hotkey, %HKRunSummitEvMacro%, HKRunSummitEvMacro, Off
-    }
 }
 
 ;===============================================================
@@ -624,13 +594,9 @@ UnbindAllHotkeyBindings()
 SetAutoClickInterval(Interval)
 {
     If Interval < %IntervalMinimum%
-    {
         Interval := IntervalMinimum
-    }
     If Interval > %IntervalMaximum%
-    {
         Interval := IntervalMaximum
-    }
 
     If AutoClickInterval != Interval
     {
