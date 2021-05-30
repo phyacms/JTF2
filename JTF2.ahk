@@ -8,6 +8,7 @@
 Global AppName := "JTF2: Joint-Trouble-Free for TD2"
 Global AppNameShort := "JTF2"
 Global AppIconPath := "JTF2.ico"
+Global AppConfigPath = "JTF2.ini"
 Global Version := "0.0.1"
 Global RepositoryLink = "https://github.com/phyacms/JTF2"
 Global GameProcessName = "TheDivision2.exe"
@@ -63,12 +64,14 @@ AppExit()
 {
 	SetTimer, Timer_DetectGameProcess, Off
     FinishAutoClick()
+    SaveSettings()
     ExitApp
 }
 
 ;===============================================================
 
 ; Gui controls
+
 Global HKToggleActivation
 Global HKToggleAutoClick
 Global HKRotateAutoClickMode
@@ -76,6 +79,7 @@ Global HKAlterClickKey
 Global HKRunOpenInventoryCacheMacro
 Global HKRunOpenApparelCacheMacro
 Global HKRunSummitEvMacro
+
 Global TxtGameProcDetect
 Global TxtClickPerSec
 Global TxtRPM
@@ -145,22 +149,15 @@ HKRotateAutoClickMode:
 GuiControlGet, bPressMode,, RadioAutoClickPressMode
 GuiControlGet, bRepeatMode,, RadioAutoClickRepeatMode
 If bPressMode
-{
     GuiControl,, RadioAutoClickRepeatMode, 1
-}
 Else If bRepeatMode
-{
     GuiControl,, RadioAutoClickPressMode, 1
-}
 ApplySettings()
 Return
 
 HKAlterClickKey:
-GuiControlGet, bChk,, CBUseAlterClickKey
-If bChk
-{
+If (IsAlternativeClickKeyAllowed())
     OnClick()
-}
 Return
 
 HKRunOpenInventoryCacheMacro:
@@ -225,7 +222,7 @@ CreateGuiControls()
     VersionTxt := " v" + Version
     Gui Add, StatusBar, vSBStatus, %VersionTxt%
 
-    SetupGuiControls(False)
+    SetupGuiControls(!FileExist(AppConfigPath))
     ApplySettings()
 
     GuiControl, Focus, BtnHelp
@@ -253,6 +250,11 @@ SetupGuiControls(bUseDefault)
     GuiControl,, CBRunOpenApparelCacheMacro, 1
     GuiControl,, CBRunSummitEvMacro, 0
     GuiControl,, CBCloseOnGameExit, 1
+
+    If !bUseDefault
+    {
+        LoadSettings()
+    }
 }
 
 UpdateGuiControls()
@@ -335,6 +337,64 @@ ApplySettings()
     SetAutoClickMode(AutoClickMode)
 
     ResetHotkeyBindings()
+}
+
+;===============================================================
+
+SaveSettings()
+{
+    FileDelete, %AppConfigPath%
+    Gui, Submit, NoHide
+
+    IniWrite, %HKToggleActivation%, %AppConfigPath%, Hotkeys, ToggleActivation
+    IniWrite, %HKToggleAutoClick%, %AppConfigPath%, Hotkeys, ToggleAutoClickBy
+    IniWrite, %HKRotateAutoClickMode%, %AppConfigPath%, Hotkeys, ToggleModeBy
+    IniWrite, %HKAlterClickKey%, %AppConfigPath%, Hotkeys, AlternativeClickKey
+    IniWrite, %HKRunOpenInventoryCacheMacro%, %AppConfigPath%, Hotkeys, RunOpenInventoryCacheMacro
+    IniWrite, %HKRunOpenApparelCacheMacro%, %AppConfigPath%, Hotkeys, RunOpenApparelCacheMacro
+    IniWrite, %HKRunSummitEvMacro%, %AppConfigPath%, Hotkeys, RunSummitElevatorMacro
+
+    If IsAutoClickModeToggleEnabled()
+        IniWrite, 1, %AppConfigPath%, Configs, ToggleAutoClickModeByHotkey
+    If IsAlternativeClickKeyAllowed()
+        IniWrite, 1, %AppConfigPath%, Configs, UseAlternativeClickKey
+
+    If IsOpenInventoryCacheMacroEnabled()
+        IniWrite, 1, %AppConfigPath%, Configs, EnableOpenInventoryCache
+    If IsOpenApparelCacheMacroEnabled()
+        IniWrite, 1, %AppConfigPath%, Configs, EnableOpenApparelCache
+    If IsRunSummitElevatorMacroEnabled()
+        IniWrite, 1, %AppConfigPath%, Configs, EnableSummitEvMacro
+}
+
+LoadSettings()
+{
+    IniRead, LoadedHotkey, %AppConfigPath%, Hotkeys, ToggleActivation, ``
+    GuiControl,, HKToggleActivation, %LoadedHotkey%
+    IniRead, LoadedHotkey, %AppConfigPath%, Hotkeys, ToggleAutoClickBy, ``
+    GuiControl,, HKToggleAutoClick, %LoadedHotkey%
+    IniRead, LoadedHotkey, %AppConfigPath%, Hotkeys, ToggleModeBy, ``
+    GuiControl,, HKRotateAutoClickMode, %LoadedHotkey%
+    IniRead, LoadedHotkey, %AppConfigPath%, Hotkeys, AlternativeClickKey, ``
+    GuiControl,, HKAlterClickKey, %LoadedHotkey%
+    IniRead, LoadedHotkey, %AppConfigPath%, Hotkeys, RunOpenInventoryCacheMacro, ``
+    GuiControl,, HKRunOpenInventoryCacheMacro, %LoadedHotkey%
+    IniRead, LoadedHotkey, %AppConfigPath%, Hotkeys, RunOpenApparelCacheMacro, ``
+    GuiControl,, HKRunOpenApparelCacheMacro, %LoadedHotkey%
+    IniRead, LoadedHotkey, %AppConfigPath%, Hotkeys, RunSummitElevatorMacro, ``
+    GuiControl,, HKRunSummitEvMacro, %LoadedHotkey%
+
+    IniRead, bChk, %AppConfigPath%, Configs, ToggleAutoClickModeByHotkey, False
+    GuiControl,, CBToggleAutoClickModeByHotkey, % bChk = True
+    IniRead, bChk, %AppConfigPath%, Configs, UseAlternativeClickKey, False
+    GuiControl,, CBUseAlterClickKey, % bChk = True
+
+    IniRead, bChk, %AppConfigPath%, Configs, EnableOpenInventoryCache, True
+    GuiControl,, CBRunOpenInventoryCacheMacro, % bChk = True
+    IniRead, bChk, %AppConfigPath%, Configs, EnableOpenApparelCache, True
+    GuiControl,, CBRunOpenApparelCacheMacro, % bChk = True
+    IniRead, bChk, %AppConfigPath%, Configs, EnableSummitEvMacro, False
+    GuiControl,, CBRunSummitEvMacro, % bChk = True
 }
 
 ;===============================================================
@@ -434,6 +494,40 @@ IsActivated()
 {
     GuiControlGet, bActivated,, CBActivate
     Return bActivated
+}
+
+;===============================================================
+
+IsAutoClickModeToggleEnabled()
+{
+    GuiControlGet, bEnabled,, CBToggleAutoClickModeByHotkey
+    Return bEnabled
+}
+
+IsAlternativeClickKeyAllowed()
+{
+    GuiControlGet, bAllowed,, CBUseAlterClickKey
+    Return bAllowed
+}
+
+;===============================================================
+
+IsOpenInventoryCacheMacroEnabled()
+{
+    GuiControlGet, bEnabled,, CBRunOpenInventoryCacheMacro
+    Return bEnabled
+}
+
+IsOpenApparelCacheMacroEnabled()
+{
+    GuiControlGet, bEnabled,, CBRunOpenApparelCacheMacro
+    Return bEnabled
+}
+
+IsRunSummitElevatorMacroEnabled()
+{
+    GuiControlGet, bEnabled,, CBRunSummitEvMacro
+    Return bEnabled
 }
 
 ;===============================================================
@@ -618,10 +712,9 @@ RunClick()
 {
     If IsGameProcessFocused() && IsActivated() && IsAutoClickEnabled()
     {
-        GuiControlGet, bAlterKeyAllowed,, CBUseAlterClickKey
         bKeyDown
             := GetKeyState("LButton", "P")
-            || (bAlterKeyAllowed && GetKeyState(HKAlterClickKey, "P"))
+            || (IsAlternativeClickKeyAllowed() && GetKeyState(HKAlterClickKey, "P"))
         bClick
             := CurrentAutoClickMode = AutoClickModeNameRepeat
             || (CurrentAutoClickMode = AutoClickModeNamePress && bKeyDown)
