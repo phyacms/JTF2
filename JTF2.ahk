@@ -911,6 +911,8 @@ AbortOpenApparelCacheMacro()
     SetTimer, MacroStep_OpenApparelCache_3, Delete
     SetTimer, MacroStep_OpenApparelCache_4, Delete
     SetTimer, MacroStep_OpenApparelCache_5, Delete
+    SetTimer, MacroStep_OpenApparelCache_6, Delete
+    SetTimer, MacroStep_OpenApparelCache_7, Delete
     bRunningOpenApparelCacheMacro := False
 
     If bMacroPressedX
@@ -934,9 +936,8 @@ MacroStep_OpenApparelCache_0:
 SetTimer, MacroStep_OpenApparelCache_0, Delete
 If IsOpenApparelCacheMacroRunning()
 {
-    Send, {X Down}
-    bMacroPressedX := True
-    SetTimer, MacroStep_OpenApparelCache_1, 3500
+    Send, {Down Down}
+    SetTimer, MacroStep_OpenApparelCache_1, 150
 }
 Return
 
@@ -944,9 +945,8 @@ MacroStep_OpenApparelCache_1:
 SetTimer, MacroStep_OpenApparelCache_1, Delete
 If IsOpenApparelCacheMacroRunning()
 {
-    Send, {X Up}
-    bMacroPressedX := False
-    SetTimer, MacroStep_OpenApparelCache_2, 750
+    Send, {Down Up}
+    SetTimer, MacroStep_OpenApparelCache_2, 150
 }
 Return
 
@@ -954,9 +954,9 @@ MacroStep_OpenApparelCache_2:
 SetTimer, MacroStep_OpenApparelCache_2, Delete
 If IsOpenApparelCacheMacroRunning()
 {
-    Send, {Q Down}
-    bMacroPressedQ := True
-    SetTimer, MacroStep_OpenApparelCache_3, 150
+    Send, {X Down}
+    bMacroPressedX := True
+    SetTimer, MacroStep_OpenApparelCache_3, 3500
 }
 Return
 
@@ -964,9 +964,9 @@ MacroStep_OpenApparelCache_3:
 SetTimer, MacroStep_OpenApparelCache_3, Delete
 If IsOpenApparelCacheMacroRunning()
 {
-    Send, {Q Up}
-    bMacroPressedQ := False
-    SetTimer, MacroStep_OpenApparelCache_4, 150
+    Send, {X Up}
+    bMacroPressedX := False
+    SetTimer, MacroStep_OpenApparelCache_4, 750
 }
 Return
 
@@ -974,8 +974,8 @@ MacroStep_OpenApparelCache_4:
 SetTimer, MacroStep_OpenApparelCache_4, Delete
 If IsOpenApparelCacheMacroRunning()
 {
-    Send, {E Down}
-    bMacroPressedE := True
+    Send, {Q Down}
+    bMacroPressedQ := True
     SetTimer, MacroStep_OpenApparelCache_5, 150
 }
 Return
@@ -984,9 +984,29 @@ MacroStep_OpenApparelCache_5:
 SetTimer, MacroStep_OpenApparelCache_5, Delete
 If IsOpenApparelCacheMacroRunning()
 {
+    Send, {Q Up}
+    bMacroPressedQ := False
+    SetTimer, MacroStep_OpenApparelCache_6, 150
+}
+Return
+
+MacroStep_OpenApparelCache_6:
+SetTimer, MacroStep_OpenApparelCache_6, Delete
+If IsOpenApparelCacheMacroRunning()
+{
+    Send, {E Down}
+    bMacroPressedE := True
+    SetTimer, MacroStep_OpenApparelCache_7, 150
+}
+Return
+
+MacroStep_OpenApparelCache_7:
+SetTimer, MacroStep_OpenApparelCache_7, Delete
+If IsOpenApparelCacheMacroRunning()
+{
     Send, {E Up}
     bMacroPressedE := False
-    SetTimer, MacroStep_OpenApparelCache_0, 150
+    SetTimer, MacroStep_OpenApparelCache_0, 1000
 }
 Return
 
